@@ -2,15 +2,8 @@ linked
 ===
 
 # Concept 😀
-## server
-```typescript
-class TestController {
-  @Get('/hello')
-  hello(@Query('name') name: string) {
-    return `hello ${name}`;
-  }
-}
-```
+## document
+- $ref: lazy end point
 
 ```shell
 curl http://localhost:3000/hello
@@ -35,8 +28,7 @@ curl http://localhost:3000/hello/address
 ```
 
 
-
-## client
+## lintfetch
 ```typescript
 client.get('/hello').then(console.log);
 ```
@@ -45,20 +37,6 @@ client.get('/hello').then(console.log);
   "name": "test",
   "address": {
     "$ref": "http://localhost:3000/hello/address"
-  }
-}
-```
----
- ```typescript
-client.get('/hello', {depth: 2}).then(console.log);
-client.get('/hello', {path: ['/address']}).then(console.log);
-```
-```json
-{
-  "name": "test",
-  "address": {
-    "host": "localhost",
-    "port": 3000
   }
 }
 ```

@@ -28,7 +28,7 @@ curl http://localhost:3000/hello/address
 ```
 
 
-## lintfetch
+## linkfetch
 ```typescript
 client.get('/hello').then(console.log);
 ```
@@ -45,7 +45,7 @@ client.get('/hello').then(console.log);
 ```typescript
 const linked = await client.get('/hello');
 // lazy load
-const addr = linked.address;
+const addr = await linked.address;
 // post submit 
 addr.host = 'change localhost';
 ```

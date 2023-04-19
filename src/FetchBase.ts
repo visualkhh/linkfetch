@@ -19,14 +19,42 @@ export type FetchFieldType<T> =  T | Promise<T> | ((...arg: any[]) => Promise<T>
 export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> : FetchFieldType<T[P]>;
 }
-export abstract class FetchBase<T, D = FetchObjectType<T>> {
-  constructor(docObject: D) {
-    Object.entries(docObject).forEach(([key, value]) => {
 
+export const linkFetch = <T = any, D = FetchObjectType<T>>(docObject: D): T => {
+  const doc = Object.assign({}, docObject) as any;
+  const proxy = (field: any) => {
+    if ('_FetchProxy_isProxy' in field) {
+      return field;
+    }
+
+    Object.entries(field).forEach(([key, value]) => {
+      if (!('_FetchProxy_isProxy' in (value as any))) {
+        doc[key] = proxy(value);
+      }
     });
-  }
 
-  private proxy(a: any) {
-
+    return new Proxy(field, new FetchProxy());
   }
+  proxy(doc);
+
+  return '' as any;
 }
+
+
+// export abstract class FetchBase<T, D = FetchObjectType<T>> {
+//   constructor(public docObject: D) {
+//
+//   }
+//
+//   private proxy(a: any) {
+//
+//   }
+//
+//   run(): T {
+//
+//     Object.entries(this.docObject).forEach(([key, value]) => {
+//
+//     });
+//     return {} as T;
+//   }
+// }

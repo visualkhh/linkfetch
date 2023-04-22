@@ -1,8 +1,24 @@
 import { FetchProxy } from 'FetchProxy';
 export const Prefix = '$' as const;
 export type PrefixType = typeof Prefix;
-export type FetchDoc = { $ref: string };
+export type FetchDoc = { _$ref: string };
 
+export const isFetchDoc = (value: any): value is FetchDoc => {
+  return value && typeof value === 'object' && '_$ref' in value;
+}
+export const isFetchMethodName = (name: string | symbol): name is string  => {
+  return typeof name === 'string' && name.startsWith(Prefix) && name.length > Prefix.length;
+}
+export const findFieldNameByFetchMethodName = (name: string ): string  => {
+  return name.replace(RegExp(`^\\${Prefix}`), '');
+}
+export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: LinkFetchConfig): ValueDocSet<T> => {
+  const fieldKey = findFieldNameByFetchMethodName(name);
+  const docOrValue = data[fieldKey];
+  const value = isFetchDoc(docOrValue) ? (config?.defaultNull ? null : undefined) : docOrValue;
+  const doc = isFetchDoc(docOrValue) ? docOrValue : undefined;
+  return {fieldName: fieldKey, fetchName: name, value, doc};
+}
 // export type FetchFieldPromiseType<T> =  Promise<T> ;
 // export type FetchObjectPromiseType<T> = {
 //   [P in keyof T]: T[P] extends object ? FetchObjectPromiseType<T[P]>  : FetchFieldPromiseType<T[P]>;
@@ -39,37 +55,48 @@ export type FetchDoc = { $ref: string };
 // } & {
 //   [P in keyof T]?: T[P] extends object ? OptionalDeep<FetchObjectPromiseType<T[P], C>> : T[P];
 // };
-
-export type FetchFieldPromiseType<T, C> =  (config?: C) => Promise<T> ;
-export type FetchObjectPromiseType<T, C> = {
-  [P in keyof T as `$${P}`]: T[P] extends object ? FetchFieldPromiseType<T[P], C> : never;
+type OnlyNever<T> = {
+  [P in keyof T as T[P] extends never ? P : never]: T[P];
+}
+type ExcludeNever<T> = {
+  [P in keyof T as T[P] extends never ? never : P]: T[P];
+}
+export type FetchFieldMethodPromiseType<T, C> =  (config?: C) => Promise<T> ;
+export type FetchObjectPromiseType<T, C> =  ExcludeNever<{
+  // @ts-ignore
+  [P in keyof T as `${PrefixType}${P}`]: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> : never;
 } & {
   [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P];
-};;
+}>;
 
+
+// type aa = NonNullable<FetchObjectPromiseType<any, any>>;
 
 export type FetchFieldType<T> =  T ;
 export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 }
 
-export const linkFetch = <T = any, C = any>(docObject: FetchObjectType<T>, fetch:(data: {origin?: any, doc?: FetchDoc}, config: C) => Promise<any>): FetchObjectPromiseType<T, C> => {
-  const doc = Object.assign({}, docObject) as any;
+export type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc };
+export type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
+export type LinkFetchConfig = {
+  defaultNull?: boolean;
+}
+export const linkFetch = <T extends object, C = any>(docObject: FetchObjectType<T>, fetch:FetchCallBack<C>, config?: LinkFetchConfig): FetchObjectPromiseType<T, C> => {
+  const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
   const proxy = (field: any) => {
-    if ('_FetchProxy_isProxy' in field) {
+    if ('_FetchProxy_isProxy' in field || isFetchDoc(field) ) {
       return field;
     }
 
     Object.entries(field).filter(([key, value]) => typeof value === 'object' && !Array.isArray(value)).forEach(([key, value]) => {
-      // console.log('===11>', key, value);
       if (!('_FetchProxy_isProxy' in (value as any))) {
         doc[key] = proxy(value);
       }
     });
 
-    return new Proxy(field, new FetchProxy(field));
+    return new Proxy(field, new FetchProxy<T, C>(field, fetch, config));
   }
   const r = proxy(doc);
   return r;
 }
-

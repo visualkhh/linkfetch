@@ -15,17 +15,18 @@ import { FetchObjectType, linkFetch } from 'linkfetch';
 // };;
 
 
+// type Data = {
+//   name: string;
+//   product1: {id: number, title: string, description: string};
+// }
 type Data = {
   name: string;
-  friends: {name: string}[];
-  age: number;
-  wow: {
-    name: string;
-    good: {
-      name: string;
-      addr:string;
-    }
-  }
+  product: {
+    products: { title: string, category: string }[];
+    total: number;
+    skip: number;
+    limit: number
+  };
 }
 // type ZZ = OptionalDeep<Data>;
 // const dd = {
@@ -46,41 +47,46 @@ type Config = {
 
 (async () => {
 
+  // const data: FetchObjectType<Data> = {
+  //   name: 'my name is dom-render',
+  //   product1: {_$ref:'https://dummyjson.com/products/1'}
+  // }
   const data: FetchObjectType<Data> = {
     name: 'my name is dom-render',
-    friends: [{name: 'a'}, {name: 'b'}, {name: 'c'}],
-    age: 1,
-    wow: {
-      name: 'wow',
-      good: {
-        $ref: 'wow.good'
-      }
+    product: {
+      _$ref: 'https://dummyjson.com/products',
     }
   }
 
   const r = linkFetch<Data, Config>(data, (data, config) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve('xxxxx');
-      }, 1000);
-    });
+    if (data.fieldName === 'product') {
+      return Promise.resolve({total: 1, skip: 0, limit: 1});
+    }
+    if (data.fieldName === 'products') {
+      return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
+    }
+      return Promise.resolve(undefined);
   });
+  // const r = linkFetch<Data, Config>(data, (data, config) => {
+  //   console.log('fetch', data, config);
+  //   return fetch(data.doc!._$ref, {method: 'GET'}).then(it => it.json());
+  //   // return new Promise((resolve, reject) => {
+  //   //   setTimeout(() => {
+  //   //     resolve({name: 'my name is dom-render', product1: {id: 1, title: 'title', description: 'description'}});
+  //   //   }, 1000);
+  //   // });
+  // });
 
   // const za = await r.$wow().then(it => it.good.name);
   // const aa = await r.wow.$good().then(it => it.name);
+  // console.log('start-->',r.name)
+  // console.log('start-->',r.product1);
+  const product = await r.$product();
+  const products = await r.product!.$products()
+  console.log(r.product, r.product!.products);
+  console.log(JSON.stringify(r));
 
 
-  // // console.log('----->', await r.name);
-  // // console.log(r.name);
-  // // r.friendsAA
-  // const a = r.age;
-  // const aa =11;
-  // const zz = r;
-  // zz.name
-  // console.log(r.wow.good.name)
-  // // r.wow.$good
-  // let data1 = r.$wow();
-  // console.log(data1)
-  // console.log(r.wow.then(it => it.good)good);
+  // console.log(JSON.stringify(r));
 
 })();

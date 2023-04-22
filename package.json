@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "main": "index.js",
   "license": "MIT",
-  "description": "object field variable fetch system",
+  "description": "object field variable fetch system, Supports Lazy fetch with field access.",
   "keywords": [
     "fetch",
     "fetcher",

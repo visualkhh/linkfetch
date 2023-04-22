@@ -133,6 +133,8 @@ console.log(JSON.stringify(r));
         - options: LinkFetchConfig
 
 ```typescript
+export async function linkFetch<T, C>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }): Promise<FetchObjectPromiseType<T, C>>{/*...*/};
+
 export type FetchFieldType<T> = T;
 export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;

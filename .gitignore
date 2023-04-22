@@ -216,3 +216,5 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,intellij+all,eclipse
 /package-lock.json
+/dist/
+/test/package-lock.json

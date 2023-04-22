@@ -25,8 +25,9 @@
         "eol-last": "off",
         "semi": "off",
         "camelcase": "off",
+        "no-return-assign": "off",
         "no-trailing-spaces": "off",
-        "indent": ["error", 4],
+        "indent": ["error", 2],
         "node/no-path-concat": "off",
         "import/no-webpack-loader-syntax": "off"
     }

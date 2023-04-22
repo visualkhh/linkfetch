@@ -38,7 +38,7 @@ const data: FetchObjectType<Data> = {
   product1: {_$ref: 'https://dummyjson.com/products/1'}
 }
 
-const fetchObject = linkFetch<Data, Config>(data, (data, config) => fetch(data.doc!._$ref, {method: 'GET'}).then(it => it.json()));
+const fetchObject = await linkFetch<Data, Config>(data, (data, config) => fetch(data.doc!._$ref, {method: 'GET'}).then(it => it.json()));
 
 const product1 = await fetchObject.$product1();  // lazy fetch
 
@@ -67,7 +67,7 @@ const data: FetchObjectType<Data> = {
   }
 }
 
-const fetchObject = linkFetch<Data, Config>(data, (data, config) => {
+const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
   if (data.fieldName === 'product') {
     return Promise.resolve({total: 1, skip: 0, limit: 1});
   }
@@ -82,6 +82,46 @@ const products = await fetchObject.product.$products() // lazy fetch
 
 console.log(product, products); // or console.log(fetchObject.product, fetchObject.product.products)
 JSON.stringify(fetchObject) // {...}
+```
+
+## first fetch
+```typescript
+type Data = {
+  name: string;
+  wow: { name: string },
+  product: {
+    products: { title: string, category: string }[];
+    total: number;
+    skip: number;
+    limit: number
+  };
+}
+const data: FetchObjectType<Data> = {
+  _$ref: 'local'
+}
+const r = await linkFetch<Data, Config>(data, (data, config) => {
+  console.log('data', data, config);
+  if (!data.fieldName) {
+    return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
+  }
+  if (data.value) {
+    return Promise.resolve(data.value);
+  }
+  if (data.fieldName === 'product') {
+    return Promise.resolve({total: 1, skip: 0, limit: 1});
+  }
+  if (data.fieldName === 'products') {
+    return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
+  }
+  return Promise.resolve(undefined);
+});
+
+console.log('first', r);
+const product = await r.$product();
+console.log(product);
+const products = await r.product!.$products()
+console.log(products, r.product!.products);
+console.log(JSON.stringify(r));
 ```
 
 # api

@@ -1,16 +1,19 @@
-import { FetchCallBack, FetchDoc, FetchFieldMethodPromiseType, findFieldNameByFetchMethodName, findFieldSetByFetchMethodName, isFetchDoc, isFetchMethodName, linkFetch, LinkFetchConfig, Prefix } from './index';
+import {
+  FetchCallBack,
+  FetchDoc,
+  findFieldSetByFetchMethodName,
+  isFetchDoc,
+  isFetchMethodName,
+  linkFetch,
+  LinkFetchConfig
+} from './index';
+
+export const FetchProxyKey = '_FetchProxy_isProxy';
 
 export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
   private docs = new Map<string | symbol, FetchDoc>();
 
   constructor(private original: any, private fetch: FetchCallBack<C>, private config?: LinkFetchConfig) {
-    // console.log('ㅅㅐㅇ성', original);
-    // if (isFetchDoc(original)) {
-    //   console.log('is Doc??')
-    //   this.doc = {...original};
-    //   this.isDoc = true;
-    //   console.log('is Doc??', this.doc)
-    // }
   }
 
   get(target: T, p: string | symbol, receiver: any): any {
@@ -28,40 +31,18 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
       } else if (!set.doc) {
         set.doc = this.docs.get(p);
       }
-      return (config: C) => {
-        return this.fetch(set, config).then(it => {
-          const proxy = linkFetch(it, this.fetch, this.config);
-          return (target as any)[set.fieldName] = proxy;
-        });
+      return (config?: C) => {
+        return this.fetch(set, {config: config, linkFetchConfig: this.config})
+          .then(it => linkFetch(it, this.fetch, this.config))
+          .then(it => {
+            return (target as any)[set.fieldName]! = it;
+          });
       };
     }
     return value;
   }
 
-  set(target: T, p: string | symbol, newValue: any, receiver: any): boolean {
-    return false;
-  }
-
   has(target: T, p: string | symbol): boolean {
-    return p === '_FetchProxy_isProxy' || p in target;
+    return p === FetchProxyKey || p in target;
   }
 }
-
-
-// export abstract class FetchBase<T, D = FetchObjectType<T>> {
-//   constructor(public docObject: D) {
-//
-//   }
-//
-//   private proxy(a: any) {
-//
-//   }
-//
-//   run(): T {
-//
-//     Object.entries(this.docObject).forEach(([key, value]) => {
-//
-//     });
-//     return {} as T;
-//   }
-// }

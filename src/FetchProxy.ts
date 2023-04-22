@@ -23,6 +23,11 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
     }
     if (isFetchMethodName(p)) {
       const set = findFieldSetByFetchMethodName(target, p, this.config);
+      if (set.doc) {
+        this.docs.set(p, set.doc);
+      } else if (!set.doc) {
+        set.doc = this.docs.get(p);
+      }
       return (config: C) => {
         return this.fetch(set, config).then(it => {
           const proxy = linkFetch(it, this.fetch, this.config);

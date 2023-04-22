@@ -59,6 +59,7 @@ type Config = {
   }
 
   const r = linkFetch<Data, Config>(data, (data, config) => {
+    console.log('data', data, config);
     if (data.fieldName === 'product') {
       return Promise.resolve({total: 1, skip: 0, limit: 1});
     }
@@ -82,9 +83,11 @@ type Config = {
   // console.log('start-->',r.name)
   // console.log('start-->',r.product1);
   const product = await r.$product();
-  const products = await r.product!.$products()
-  console.log(r.product, r.product!.products);
-  console.log(JSON.stringify(r));
+  const product2 = await r.$product();
+  console.log(product2, product);
+  // const products = await r.product!.$products()
+  // console.log(r.product, r.product!.products);
+  // console.log(JSON.stringify(r));
 
 
   // console.log(JSON.stringify(r));

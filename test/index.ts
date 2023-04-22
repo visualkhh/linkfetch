@@ -75,13 +75,14 @@ type Config = {
       return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
     }
     return Promise.resolve(undefined);
-  });
+  }, {linkFetchConfig: {everyFetch: true}});
 
   console.log('--->', r);
   const product = await r.$product();
-  console.log(product);
-  const products = await r.product!.$products();
-  console.log(products, r.product!.products);
+  const product2 = await r.$product();
+  console.log(product, product2);
+  // const products = await r.product!.$products();
+  // console.log(products, r.product!.products);
   // r.product.products = [];
   // const r = linkFetch<Data, Config>(data, (data, config) => {
   //   console.log('fetch', data, config);

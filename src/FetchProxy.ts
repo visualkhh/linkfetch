@@ -20,7 +20,7 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
     // console.log('isProxy', '_FetchProxy_isProxy' in target, '_FetchProxy_isProxy' in receiver);
     // console.log('get', target, p, receiver);
     // const old = Reflect.get(target, p, receiver);
-    let value = (target as any)[p]; // Reflect.get(target, p, receiver); // (target as any)[p]; //
+    let value = Reflect.get(target, p, receiver) as any; // (target as any)[p]; // Reflect.get(target, p, receiver); // (target as any)[p]; //
     if (isFetchDoc(value)) {
       value = (this.config?.defaultNull ? null : undefined);
     }
@@ -32,11 +32,18 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
         set.doc = this.docs.get(p);
       }
       return (config?: C) => {
-        return this.fetch(set, {config: config, linkFetchConfig: this.config})
-          .then(it => linkFetch(it, this.fetch, this.config))
-          .then(it => {
-            return (target as any)[set.fieldName]! = it;
-          });
+        if (this.config?.everyFetch || set.value === undefined || set.value === null) {
+          return this.fetch(set, {config: config, linkFetchConfig: this.config})
+            .then(it => linkFetch(it, this.fetch, {config: config, linkFetchConfig: this.config}))
+            .then(it => {
+              Reflect.set(target, set.fieldName ?? '', it, receiver);
+              return Reflect.get(target, set.fieldName ?? '', receiver);
+            });
+        } else if (set.value) {
+          return Promise.resolve(set.value);
+        } else {
+          return Promise.resolve(undefined);
+        }
       };
     }
     return value;

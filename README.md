@@ -141,5 +141,6 @@ type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
 type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc };
 type LinkFetchConfig = {
   defaultNull?: boolean; // unfetch default value is null 
+  everyFetch?: boolean; // every fetch   default false
 } 
 ```

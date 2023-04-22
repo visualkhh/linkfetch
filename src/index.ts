@@ -3,7 +3,7 @@ import { FetchProxy, FetchProxyKey } from 'FetchProxy';
 export const Prefix = '$' as const;
 export type PrefixType = typeof Prefix;
 export type FetchDoc = { _$ref: string };
-export type LinkFetchConfig = { defaultNull?: boolean; }
+export type LinkFetchConfig = { defaultNull?: boolean; everyFetch?: boolean; };
 export type ValueDocSet<T = any> = { fieldName?: string, fetchName?: string, value?: T, doc?: FetchDoc };
 
 export const isFetchProxy = (value: any): boolean => {
@@ -78,7 +78,7 @@ export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 } | FetchDoc;
 
-export type FetchCallBack<C = any> = (data: ValueDocSet, config: { config?: C, linkFetchConfig?: LinkFetchConfig }) => Promise<any>;
+export type FetchCallBack<C = any> = (data: ValueDocSet, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }) => Promise<any>;
 export const linkFetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }): Promise<FetchObjectPromiseType<T, C>> => {
   const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
   const proxy = (field: any) => {

@@ -33,11 +33,14 @@ ex)
   }
 }
 ```
-
+# ⚒️ example
+- [![express](https://img.shields.io/badge/-server-black?logo=express)](./test/server:test.ts)
+- [![typescript](https://img.shields.io/badge/-node-black?logo=typescript)](./test/node:test.ts)
+- [![javascript](https://img.shields.io/badge/-web-black?logo=javascript)](./test/web:test.html)
 # remote fetch
 
 ```typescript
-import { FetchObjectType, linkFetch } from 'linkfetch';
+import { FetchObjectType, linkfetch } from 'linkfetch';
 
 type Data = {
   name: string;
@@ -49,7 +52,7 @@ const data: FetchObjectType<Data> = {
   product1: {$ref: 'https://dummyjson.com/products/1'}
 }
 
-const fetchObject = await linkFetch<Data, Config>(data, (data, config) => fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json()));
+const fetchObject = await linkfetch<Data, Config>(data, (data, config) => fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json()));
 
 const product1 = await fetchObject.$product1();  // lazy fetch
 
@@ -60,7 +63,7 @@ JSON.stringify(fetchObject) // {...}
 # local fetch
 
 ```typescript
-import { FetchObjectType, linkFetch } from 'linkfetch';
+import { FetchObjectType, linkfetch } from 'linkfetch';
 
 type Data = {
   name: string;
@@ -78,7 +81,7 @@ const data: FetchObjectType<Data> = {
   }
 }
 
-const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
+const fetchObject = await linkfetch<Data, Config>(data, (data, config) => {
   if (data.fieldName === 'product') {
     return Promise.resolve({total: 1, skip: 0, limit: 1});
   }
@@ -111,7 +114,7 @@ type Data = {
 const data: FetchObjectType<Data> = {
   $ref: 'local'
 }
-const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
+const fetchObject = await linkfetch<Data, Config>(data, (data, config) => {
   console.log('data', data, config);
   if (!data.fieldName) {
     return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
@@ -150,14 +153,14 @@ const products = await fetchObject.$$fetch('product.products');
 
 # api
 
-- linkFetch
+- linkfetch
     - parameter
         - data: FetchObjectType
         - fetch: FetchCallBack
-        - options: LinkFetchConfig
+        - options: linkfetchConfig
 
 ```typescript
-export async function linkFetch<T, C>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }): Promise<FetchObjectPromiseType<T, C>> {/*...*/
+export async function linkfetch<T, C>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: linkfetchConfig }): Promise<FetchObjectPromiseType<T, C>> {/*...*/
 };
 
 export type FetchFieldType<T> = T;
@@ -167,7 +170,7 @@ export type FetchObjectType<T> = {
 type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
 type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc, keys: string[] };
 // keys: ex) ['product', 'products'] field depth path ← obj.product.products
-type LinkFetchConfig = {
+type linkfetchConfig = {
   defaultNull?: boolean; // unfetch default value is null 
   everyFetch?: boolean; // every fetch   default false
   disableSync?: boolean; // default false 

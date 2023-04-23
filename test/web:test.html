@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>linkfetch</title>
+</head>
+<body>
+<button id="fetch-user-btn">fetch user</button>
+<button id="fetch-address-btn">fetch address</button>
+<div>
+    <h1>user</h1>
+    <div id="user-display">
+
+    </div>
+</div>
+<script src="../dist/dist/bundle.js"></script>
+<script>
+    let user = undefined;
+    const createUser = () => {
+        return linkfetch({$ref: 'http://localhost:3000/users/1'}, (data) => {
+            console.log('fetching user', data);
+            return fetch(data.doc?.$ref, {method: 'GET'}).then(it => it.json());
+        });
+    }
+    const writeUser = (user) => {
+        const userDisplay = document.getElementById('user-display');
+        userDisplay.innerHTML = JSON.stringify(user);
+    };
+
+    document.getElementById('fetch-user-btn').addEventListener('click', async function () {
+        user = await createUser();
+        writeUser(user);
+    });
+    document.getElementById('fetch-address-btn').addEventListener('click', async function () {
+        await user.$address();
+        writeUser(user);
+    });
+
+
+</script>
+</body>
+</html>

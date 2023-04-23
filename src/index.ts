@@ -1,8 +1,11 @@
 import { FetchProxy, FetchProxyKey } from 'FetchProxy';
 
-export const Prefix = '$' as const;
-export type PrefixType = typeof Prefix;
-export type FetchDoc = { _$ref: string };
+export const PrefixMetaField = '$$' as const;
+export type PrefixMetaFieldType = typeof PrefixMetaField;
+export const PrefixField = '$' as const;
+export type PrefixFieldType = typeof PrefixField;
+
+export type FetchDoc = { $ref: string };
 export type LinkFetchConfig = { defaultNull?: boolean; everyFetch?: boolean; disableSync?: boolean };
 export type ValueDocSet<T = any> = { fieldName?: string, fetchName?: string, keys?: string[], value?: T, doc?: FetchDoc };
 
@@ -10,13 +13,13 @@ export const isFetchProxy = (value: any): boolean => {
   return typeof value === 'object' && FetchProxyKey in value;
 }
 export const isFetchDoc = (value: any): value is FetchDoc => {
-  return value && typeof value === 'object' && '_$ref' in value;
+  return value && typeof value === 'object' && '$ref' in value;
 }
 export const isFetchMethodName = (name: string | symbol): name is string => {
-  return typeof name === 'string' && name.startsWith(Prefix) && name.length > Prefix.length;
+  return typeof name === 'string' && !name.startsWith(PrefixMetaField) && name.startsWith(PrefixField) && name.length > PrefixField.length;
 }
 export const findFieldNameByFetchMethodName = (name: string): string => {
-  return name.replace(RegExp(`^\\${Prefix}`), '');
+  return name.replace(RegExp(`^\\${PrefixField}`), '');
 }
 export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: LinkFetchConfig): ValueDocSet<T> => {
   const fieldKey = findFieldNameByFetchMethodName(name);
@@ -70,7 +73,7 @@ type ExcludeNever<T> = {
 export type FetchFieldMethodPromiseType<T, C> = (config?: C) => Promise<T>;
 export type FetchObjectPromiseType<T, C> = ExcludeNever<{
   // @ts-ignore
-  [P in keyof T as `${PrefixType}${P}`]: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> : never;
+  [P in keyof T as `${PrefixFieldType}${P}`]: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> : never;
 } & {
   // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
   [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
@@ -94,7 +97,17 @@ export const execute = (target: any, keys: string[] | string, parameter?: any[])
   return t as any;
 };
 
-export const linkFetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & { _$value: (keys: string[] | string) => any; _$fetch: (keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<T, C>> }> => {
+type MetaFncBase<T, C> = {
+  value: (keys: string[] | string) => any;
+  fetch: (keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<T, C>>
+}
+
+export type MetaFnc<T, C> = {
+  // @ts-ignore
+  [P in keyof MetaFncBase<T, C> as `${PrefixMetaFieldType}${P}`]: MetaFncBase<T, C>[P];
+}
+
+export const linkFetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
   const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
   const proxy = (field: any, keys: string[] = []) => {
     if (isFetchProxy(field) || isFetchDoc(field)) {
@@ -121,17 +134,18 @@ export const linkFetch = async <T extends object, C = any>(docObject: FetchObjec
   }
 
   const target = proxy(doc);
-  return Object.assign(target, {
-    _$value: (keys: string[] | string) => {
+  const metaFnc: MetaFnc<T, C> = {
+    $$value: (keys: string[] | string) => {
       return execute(target, keys);
     },
-    _$fetch: async (keys: string[] | string, config?: C) => {
+    $$fetch: async (keys: string[] | string, config?: C) => {
       const keyArray = Array.isArray(keys) ? keys : keys.split('.');
       if (keyArray.length > 0) {
         const name = keyArray[keyArray.length - 1];
-        keyArray[keyArray.length - 1] = `${Prefix}${name}`;
+        keyArray[keyArray.length - 1] = `${PrefixField}${name}`;
       }
       return await execute(target, keyArray, [config]);
     }
-  });
+  }
+  return Object.assign(target, metaFnc);
 }

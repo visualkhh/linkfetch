@@ -13,20 +13,20 @@ import { FetchObjectType, linkFetch } from 'linkfetch';
 // } & {
 //   [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P]> : T[P];
 // };;
-// type Data = {
-//   name: string;
-//   product1: {id: number, title: string, description: string};
-// }
 type Data = {
   name: string;
-  wow: { name: string },
-  product: {
-    products: { title: string, category: string }[];
-    total: number;
-    skip: number;
-    limit: number
-  };
+  product1: {id: number, title: string, description: string};
 }
+// type Data = {
+//   name: string;
+//   wow: { name: string },
+//   product: {
+//     products: { title: string, category: string }[];
+//     total: number;
+//     skip: number;
+//     limit: number
+//   };
+// }
 // type ZZ = OptionalDeep<Data>;
 // const dd = {
 //
@@ -39,64 +39,70 @@ type Data = {
 // z.$good().then(it => it.name);
 // dd.$wow();
 
-
 type Config = {
   name: string
 }
 
 (async () => {
-  // const data: FetchObjectType<Data> = {
-  //   name: 'my name is dom-render',
-  //   product1: {_$ref:'https://dummyjson.com/products/1'}
-  // }
   const data: FetchObjectType<Data> = {
-    name: 'my name is dom-render',
-    wow: { name: 'wow' },
-    product: {
-      _$ref: 'https://dummyjson.com/products',
+    name: 'my name is linkfetch',
+    product1: {
+      $ref: 'https://dummyjson.com/products/1'
     }
   }
+  // const data: FetchObjectType<Data> = {
+  //   name: 'my name is dom-render',
+  //   wow: { name: 'wow' },
+  //   product: {
+  //     $ref: 'https://dummyjson.com/products',
+  //   }
+  // }
   // const data: FetchObjectType<Data> = {
   //   _$ref: 'https://dummyjson.com/products'
   // }
 
   const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
-    // console.log('data', data, config);
-    if (!data.fieldName) {
-      return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
-    }
-    if (data.value) {
-      return Promise.resolve(data.value);
-    }
-    if (data.fieldName === 'product') {
-      return Promise.resolve({total: 1, skip: 0, limit: 1});
-    }
-    if (data.fieldName === 'products') {
-      return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
-    }
-    return Promise.resolve(undefined);
-  }, {linkFetchConfig: {everyFetch: true, disableSync: false}});
+    console.log('fetch', data, config);
+    return fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json());
+    // return new Promise((resolve, reject) => {
+    //   setTimeout(() => {
+    //     resolve({name: 'my name is dom-render', product1: {id: 1, title: 'title', description: 'description'}});
+    //   }, 1000);
+    // });
+  });
+  console.log('start-->', fetchObject.name)
+  // await fetchObject.$product1()
+  // await fetchObject.$$fetch('product1');
+  console.log('start-->', fetchObject.product1);
+  // const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
+  //   // console.log('data', data, config);
+  //   if (!data.fieldName) {
+  //     return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
+  //   }
+  //   if (data.value) {
+  //     return Promise.resolve(data.value);
+  //   }
+  //   if (data.fieldName === 'product') {
+  //     return Promise.resolve({total: 1, skip: 0, limit: 1});
+  //   }
+  //   if (data.fieldName === 'products') {
+  //     return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
+  //   }
+  //   return Promise.resolve(undefined);
+  // }, {linkFetchConfig: {everyFetch: true, disableSync: false}});
+  //
+  // console.log('--->', fetchObject);
+  // const product = await fetchObject.$product();
+  // // console.log(product, r.product);
+  // // const product2 = await r.$product();
+  // // console.log(product, product2);
+  // // const products = await r.product!.$products();
+  // // console.log(products, r.product!.products);
+  // await fetchObject.$$fetch('product.products');
+  // const a = fetchObject.$$value('product.products');
+  // console.log(' value: ', a);
+  // // r.product.products = [];
 
-  console.log('--->', fetchObject);
-  const product = await fetchObject.$product();
-  // console.log(product, r.product);
-  // const product2 = await r.$product();
-  // console.log(product, product2);
-  // const products = await r.product!.$products();
-  // console.log(products, r.product!.products);
-  await fetchObject._$fetch('product.products');
-  const a = fetchObject._$value('product.products');
-  console.log(' value: ', a);
-  // r.product.products = [];
-  // const r = linkFetch<Data, Config>(data, (data, config) => {
-  //   console.log('fetch', data, config);
-  //   return fetch(data.doc!._$ref, {method: 'GET'}).then(it => it.json());
-  //   // return new Promise((resolve, reject) => {
-  //   //   setTimeout(() => {
-  //   //     resolve({name: 'my name is dom-render', product1: {id: 1, title: 'title', description: 'description'}});
-  //   //   }, 1000);
-  //   // });
-  // });
 
   // const za = await r.$wow().then(it => it.good.name);
   // const aa = await r.wow.$good().then(it => it.name);

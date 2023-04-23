@@ -5,9 +5,9 @@ linked lazy fetch!
 
 * Supports Lazy fetch with field access.
 * You can fetch by accessing the $fieldName.  (prefix: '$')
-  * ex) fetchObject.$fieldName()  ← Promise Object
+    * ex) fetchObject.$fieldName()  ← Promise Object
 * value is automatically assigned to the field variable after fetch.
-  * ex) fetchObject.fieldName
+    * ex) fetchObject.fieldName
 
 # 🚀 Quick start  install
 
@@ -19,7 +19,18 @@ npm install linkfetch
 
 ```json
 {
-  "_$ref": "lazy end point"
+  "$ref": "lazy end point"
+}
+```
+
+ex)
+
+```json
+{
+  "name": "my name is linkfetch",
+  "product1": {
+    "$ref": "https://dummyjson.com/products/1"
+  }
 }
 ```
 
@@ -85,6 +96,7 @@ JSON.stringify(fetchObject) // {...}
 ```
 
 ## first fetch
+
 ```typescript
 type Data = {
   name: string;
@@ -125,15 +137,19 @@ console.log(JSON.stringify(fetchObject));
 ```
 
 # field path access
+
 ```typescript
-const products = fetchObject._$value('product.products');
+const products = fetchObject.$$value('product.products');
 ```
+
 # field path fetch
+
 ```typescript
-const products = await fetchObject._$fetch('product.products');
+const products = await fetchObject.$$fetch('product.products');
 ```
 
 # api
+
 - linkFetch
     - parameter
         - data: FetchObjectType
@@ -141,14 +157,15 @@ const products = await fetchObject._$fetch('product.products');
         - options: LinkFetchConfig
 
 ```typescript
-export async function linkFetch<T, C>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }): Promise<FetchObjectPromiseType<T, C>>{/*...*/};
+export async function linkFetch<T, C>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }): Promise<FetchObjectPromiseType<T, C>> {/*...*/
+};
 
 export type FetchFieldType<T> = T;
 export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 }
 type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
-type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc,  keys: string[] };
+type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc, keys: string[] };
 // keys: ex) ['product', 'products'] field depth path ← obj.product.products
 type LinkFetchConfig = {
   defaultNull?: boolean; // unfetch default value is null 

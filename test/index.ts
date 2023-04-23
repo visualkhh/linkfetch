@@ -60,8 +60,8 @@ type Config = {
   //   _$ref: 'https://dummyjson.com/products'
   // }
 
-  const r = await linkFetch<Data, Config>(data, (data, config) => {
-    console.log('data', data, config);
+  const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
+    // console.log('data', data, config);
     if (!data.fieldName) {
       return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
     }
@@ -75,17 +75,18 @@ type Config = {
       return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
     }
     return Promise.resolve(undefined);
-  }, {linkFetchConfig: {everyFetch: true}});
+  }, {linkFetchConfig: {everyFetch: true, disableSync: false}});
 
-  const aa = r.product!.$products();
-  const a2a = r.product!.products;
-  a2a?.forEach(it => console.log(it!.title));
-  console.log('--->', r);
-  const product = await r.$product();
-  const product2 = await r.$product();
-  console.log(product, product2);
+  console.log('--->', fetchObject);
+  const product = await fetchObject.$product();
+  // console.log(product, r.product);
+  // const product2 = await r.$product();
+  // console.log(product, product2);
   // const products = await r.product!.$products();
   // console.log(products, r.product!.products);
+  await fetchObject._$fetch('product.products');
+  const a = fetchObject._$value('product.products');
+  console.log(' value: ', a);
   // r.product.products = [];
   // const r = linkFetch<Data, Config>(data, (data, config) => {
   //   console.log('fetch', data, config);
@@ -110,6 +111,6 @@ type Config = {
   // const product2 = await r.$product();
   // console.log(product2, product);
 
-  console.log(JSON.stringify(r));
+  console.log(JSON.stringify(fetchObject));
   // console.log(JSON.stringify(r));
 })();

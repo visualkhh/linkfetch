@@ -13,7 +13,7 @@ export const FetchProxyKey = '_FetchProxy_isProxy';
 export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
   private docs = new Map<string | symbol, FetchDoc>();
 
-  constructor(private original: any, private fetch: FetchCallBack<C>, private config?: LinkFetchConfig) {
+  constructor(private original: any, private fetch: FetchCallBack<C>, private keys: string[], private config?: LinkFetchConfig) {
   }
 
   get(target: T, p: string | symbol, receiver: any): any {
@@ -31,13 +31,21 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
       } else if (!set.doc) {
         set.doc = this.docs.get(p);
       }
+      set.keys = [...this.keys]
+      if (set.fieldName) {
+        set.keys.push(set.fieldName);
+      }
       return (config?: C) => {
         if (this.config?.everyFetch || set.value === undefined || set.value === null) {
           return this.fetch(set, {config: config, linkFetchConfig: this.config})
-            .then(it => linkFetch(it, this.fetch, {config: config, linkFetchConfig: this.config}))
+            .then(it => linkFetch(it, this.fetch, {config: config, linkFetchConfig: this.config, keys: set.keys}))
             .then(it => {
-              Reflect.set(target, set.fieldName ?? '', it, receiver);
-              return Reflect.get(target, set.fieldName ?? '', receiver);
+              if (this.config?.disableSync) {
+                return it;
+              } else {
+                Reflect.set(target, set.fieldName ?? '', it, receiver);
+                return Reflect.get(target, set.fieldName ?? '', receiver);
+              }
             });
         } else if (set.value) {
           return Promise.resolve(set.value);

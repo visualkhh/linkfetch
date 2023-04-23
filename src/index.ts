@@ -3,8 +3,8 @@ import { FetchProxy, FetchProxyKey } from 'FetchProxy';
 export const Prefix = '$' as const;
 export type PrefixType = typeof Prefix;
 export type FetchDoc = { _$ref: string };
-export type LinkFetchConfig = { defaultNull?: boolean; everyFetch?: boolean; };
-export type ValueDocSet<T = any> = { fieldName?: string, fetchName?: string, value?: T, doc?: FetchDoc };
+export type LinkFetchConfig = { defaultNull?: boolean; everyFetch?: boolean; disableSync?: boolean };
+export type ValueDocSet<T = any> = { fieldName?: string, fetchName?: string, keys?: string[], value?: T, doc?: FetchDoc };
 
 export const isFetchProxy = (value: any): boolean => {
   return typeof value === 'object' && FetchProxyKey in value;
@@ -45,9 +45,9 @@ export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, na
 // type OptionalDeep<T> = {
 //   [P in keyof T]?: T[P] extends object ? OptionalDeep<T[P]> : T[P];
 // }
-type OptionalObject<T> = {
-  [P in keyof T]?: T[P];
-}
+// type OptionalObject<T> = {
+//   [P in keyof T]?: T[P];
+// }
 type Optional<T> = T | undefined;
 // type Capitalize<T> = T extends `${infer F}${infer R}` ? `${Uppercase<F>}${R}` : T;
 // export type FetchFieldPromiseType<T, C> =  (config?: C) => Promise<T> ;
@@ -81,20 +81,36 @@ export type FetchObjectType<T> = {
 } | FetchDoc;
 
 export type FetchCallBack<C = any> = (data: ValueDocSet, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }) => Promise<any>;
-export const linkFetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }): Promise<FetchObjectPromiseType<T, C>> => {
+
+export const execute = (target: any, keys: string[] | string, parameter?: any[]) => {
+  let t = target;
+  const keyArray = Array.isArray(keys) ? keys : keys.split('.');
+  keyArray.forEach(key => {
+    t = t[key];
+  });
+  if (typeof t === 'function') {
+    return t.apply(target, parameter);
+  }
+  return t as any;
+};
+
+export const linkFetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & { _$value: (keys: string[] | string) => any; _$fetch: (keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<T, C>> }> => {
   const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
-  const proxy = (field: any) => {
+  const proxy = (field: any, keys: string[] = []) => {
     if (isFetchProxy(field) || isFetchDoc(field)) {
       return field;
     }
 
     Object.entries(field).filter(([key, value]) => typeof value === 'object' && !Array.isArray(value)).forEach(([key, value]) => {
       if (!isFetchProxy(value)) {
-        doc[key] = proxy(value);
+        const subKeys = [...keys, key];
+        doc[key] = proxy(value, subKeys);
       }
     });
 
-    return new Proxy(field, new FetchProxy<T, C>(field, fetch, config?.linkFetchConfig));
+    const inKeys = [...(config?.keys ?? [])];
+    inKeys.push(...keys);
+    return new Proxy(field, new FetchProxy<T, C>(field, fetch, inKeys, config?.linkFetchConfig));
   }
 
   if (isFetchDoc(doc)) {
@@ -103,5 +119,19 @@ export const linkFetch = async <T extends object, C = any>(docObject: FetchObjec
     const proxy = linkFetch(returnData, fetch, config);
     return proxy as any;
   }
-  return proxy(doc);
+
+  const target = proxy(doc);
+  return Object.assign(target, {
+    _$value: (keys: string[] | string) => {
+      return execute(target, keys);
+    },
+    _$fetch: async (keys: string[] | string, config?: C) => {
+      const keyArray = Array.isArray(keys) ? keys : keys.split('.');
+      if (keyArray.length > 0) {
+        const name = keyArray[keyArray.length - 1];
+        keyArray[keyArray.length - 1] = `${Prefix}${name}`;
+      }
+      return await execute(target, keyArray, [config]);
+    }
+  });
 }

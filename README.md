@@ -99,7 +99,7 @@ type Data = {
 const data: FetchObjectType<Data> = {
   _$ref: 'local'
 }
-const r = await linkFetch<Data, Config>(data, (data, config) => {
+const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
   console.log('data', data, config);
   if (!data.fieldName) {
     return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
@@ -116,16 +116,24 @@ const r = await linkFetch<Data, Config>(data, (data, config) => {
   return Promise.resolve(undefined);
 });
 
-console.log('first', r);
-const product = await r.$product();
+console.log('first', fetchObject);
+const product = await fetchObject.$product();
 console.log(product);
-const products = await r.product!.$products()
-console.log(products, r.product!.products);
-console.log(JSON.stringify(r));
+const products = await fetchObject.product!.$products()
+console.log(products, fetchObject.product!.products);
+console.log(JSON.stringify(fetchObject));
+```
+
+# field path access
+```typescript
+ await fetchObject._$fetch('product.products');
+```
+# field path fetch
+```typescript
+const a = fetchObject._$value('product.products');
 ```
 
 # api
-
 - linkFetch
     - parameter
         - data: FetchObjectType
@@ -140,9 +148,11 @@ export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 }
 type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
-type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc };
+type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc,  keys: string[] };
+// keys: ex) ['product', 'products'] field depth path ← obj.product.products
 type LinkFetchConfig = {
   defaultNull?: boolean; // unfetch default value is null 
   everyFetch?: boolean; // every fetch   default false
+  disableSync?: boolean; // default false 
 } 
 ```

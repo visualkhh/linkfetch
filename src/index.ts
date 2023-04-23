@@ -85,12 +85,15 @@ export type FetchObjectType<T> = {
 
 export type FetchCallBack<C = any> = (data: ValueDocSet, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }) => Promise<any>;
 
-export const execute = (target: any, keys: string[] | string, parameter?: any[]) => {
+export const execute = async (target: any, keys: string[] | string, fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>, parameter?: any[]) => {
   let t = target;
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-  keyArray.forEach(key => {
-    t = t[key];
-  });
+  for (const key in keyArray) {
+    if (t === undefined || t === null) {
+      return undefined;
+    }
+    t = fieldLoopCallBack ? (await fieldLoopCallBack(target, t, t[key], key)) : t[key];
+  }
   if (typeof t === 'function') {
     return t.apply(target, parameter);
   }
@@ -98,7 +101,7 @@ export const execute = (target: any, keys: string[] | string, parameter?: any[])
 };
 
 type MetaFncBase<T, C> = {
-  value: (keys: string[] | string) => any;
+  value: (keys: string[] | string) => Promise<any>;
   fetch: (keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<T, C>>
 }
 
@@ -135,8 +138,8 @@ export const linkFetch = async <T extends object, C = any>(docObject: FetchObjec
 
   const target = proxy(doc);
   const metaFnc: MetaFnc<T, C> = {
-    $$value: (keys: string[] | string) => {
-      return execute(target, keys);
+    $$value: async (keys: string[] | string) => {
+      return await execute(target, keys);
     },
     $$fetch: async (keys: string[] | string, config?: C) => {
       const keyArray = Array.isArray(keys) ? keys : keys.split('.');
@@ -144,7 +147,13 @@ export const linkFetch = async <T extends object, C = any>(docObject: FetchObjec
         const name = keyArray[keyArray.length - 1];
         keyArray[keyArray.length - 1] = `${PrefixField}${name}`;
       }
-      return await execute(target, keyArray, [config]);
+      return await execute(target, keyArray, async (target: any, prev: any, value: any, name: string) => {
+        if (value === undefined || value === null) {
+          return await prev[`${PrefixField}${name}`];
+        } else {
+          return value;
+        }
+      }, [config]);
     }
   }
   return Object.assign(target, metaFnc);

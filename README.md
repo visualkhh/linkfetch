@@ -15,6 +15,12 @@ linked lazy fetch!
 npm install linkfetch
 ```
 
+# ⚒️ example
+- [![express](https://img.shields.io/badge/-server-black?logo=express)](./test/server:test.ts)
+- [![typescript](https://img.shields.io/badge/-node-black?logo=typescript)](./test/node:test.ts)
+- [![javascript](https://img.shields.io/badge/-web-black?logo=javascript)](./test/web:test.html)
+
+
 ## linkfetch document protocol
 
 ```json
@@ -33,10 +39,7 @@ ex)
   }
 }
 ```
-# ⚒️ example
-- [![express](https://img.shields.io/badge/-server-black?logo=express)](./test/server:test.ts)
-- [![typescript](https://img.shields.io/badge/-node-black?logo=typescript)](./test/node:test.ts)
-- [![javascript](https://img.shields.io/badge/-web-black?logo=javascript)](./test/web:test.html)
+
 # remote fetch
 
 ```typescript

@@ -45,9 +45,10 @@ export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, na
 // type OptionalDeep<T> = {
 //   [P in keyof T]?: T[P] extends object ? OptionalDeep<T[P]> : T[P];
 // }
-// type Optional<T> = {
-//   [P in keyof T]?:  T[P];
-// }
+type OptionalObject<T> = {
+  [P in keyof T]?: T[P];
+}
+type Optional<T> = T | undefined;
 // type Capitalize<T> = T extends `${infer F}${infer R}` ? `${Uppercase<F>}${R}` : T;
 // export type FetchFieldPromiseType<T, C> =  (config?: C) => Promise<T> ;
 // export type FetchObjectPromiseObjectType<T> = {
@@ -71,7 +72,8 @@ export type FetchObjectPromiseType<T, C> = ExcludeNever<{
   // @ts-ignore
   [P in keyof T as `${PrefixType}${P}`]: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> : never;
 } & {
-  [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P];
+  // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
+  [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
 }>;
 export type FetchFieldType<T> = T;
 export type FetchObjectType<T> = {

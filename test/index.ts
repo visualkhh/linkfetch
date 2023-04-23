@@ -77,6 +77,9 @@ type Config = {
     return Promise.resolve(undefined);
   }, {linkFetchConfig: {everyFetch: true}});
 
+  const aa = r.product!.$products();
+  const a2a = r.product!.products;
+  a2a?.forEach(it => console.log(it!.title));
   console.log('--->', r);
   const product = await r.$product();
   const product2 = await r.$product();

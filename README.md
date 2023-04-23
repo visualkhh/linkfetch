@@ -46,10 +46,10 @@ type Data = {
 
 const data: FetchObjectType<Data> = {
   name: 'my name is dom-render',
-  product1: {_$ref: 'https://dummyjson.com/products/1'}
+  product1: {$ref: 'https://dummyjson.com/products/1'}
 }
 
-const fetchObject = await linkFetch<Data, Config>(data, (data, config) => fetch(data.doc!._$ref, {method: 'GET'}).then(it => it.json()));
+const fetchObject = await linkFetch<Data, Config>(data, (data, config) => fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json()));
 
 const product1 = await fetchObject.$product1();  // lazy fetch
 
@@ -74,7 +74,7 @@ type Data = {
 const data: FetchObjectType<Data> = {
   name: 'my name is dom-render',
   product: {
-    _$ref: 'local',
+    $ref: 'local',
   }
 }
 
@@ -109,7 +109,7 @@ type Data = {
   };
 }
 const data: FetchObjectType<Data> = {
-  _$ref: 'local'
+  $ref: 'local'
 }
 const fetchObject = await linkFetch<Data, Config>(data, (data, config) => {
   console.log('data', data, config);

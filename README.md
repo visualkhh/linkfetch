@@ -126,11 +126,11 @@ console.log(JSON.stringify(fetchObject));
 
 # field path access
 ```typescript
- await fetchObject._$fetch('product.products');
+const products = fetchObject._$value('product.products');
 ```
 # field path fetch
 ```typescript
-const a = fetchObject._$value('product.products');
+const products = await fetchObject._$fetch('product.products');
 ```
 
 # api

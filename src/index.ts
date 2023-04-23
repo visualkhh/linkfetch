@@ -110,7 +110,7 @@ export type MetaFnc<T, C> = {
   [P in keyof MetaFncBase<T, C> as `${PrefixMetaFieldType}${P}`]: MetaFncBase<T, C>[P];
 }
 
-export const linkFetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
+export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
   const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
   const proxy = (field: any, keys: string[] = []) => {
     if (isFetchProxy(field) || isFetchDoc(field)) {
@@ -132,7 +132,7 @@ export const linkFetch = async <T extends object, C = any>(docObject: FetchObjec
   if (isFetchDoc(doc)) {
     const set: ValueDocSet = {fieldName: undefined, fetchName: undefined, value: undefined, doc};
     const returnData = await fetch(set, config);
-    const proxy = linkFetch(returnData, fetch, config);
+    const proxy = linkfetch(returnData, fetch, config);
     return proxy as any;
   }
 

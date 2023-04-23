@@ -4,7 +4,7 @@ import {
   findFieldSetByFetchMethodName,
   isFetchDoc,
   isFetchMethodName,
-  linkFetch,
+  linkfetch,
   LinkFetchConfig
 } from './index';
 
@@ -38,7 +38,7 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
       return (config?: C) => {
         if (this.config?.everyFetch || set.value === undefined || set.value === null) {
           return this.fetch(set, {config: config, linkFetchConfig: this.config})
-            .then(it => linkFetch(it, this.fetch, {config: config, linkFetchConfig: this.config, keys: set.keys}))
+            .then(it => linkfetch(it, this.fetch, {config: config, linkFetchConfig: this.config, keys: set.keys}))
             .then(it => {
               if (this.config?.disableSync) {
                 return it;

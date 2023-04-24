@@ -1,4 +1,4 @@
-import { FetchCallBack, FetchConfig, FetchDoc, findFieldSetByFetchMethodName, isFetchDoc, isFetchMethodName, linkfetch } from './index';
+import { FetchCallBack, FetchConfig, FetchDoc, findFieldSetByFetchMethodName, isFetchDoc, isFetchMethodName, linkfetch, MetaFetch, MetaValue } from './index';
 
 export const FetchProxyKey = '_FetchProxy_isProxy';
 
@@ -28,10 +28,12 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
         set.keys.push(set.fieldName);
       }
       return (config?: C) => {
-        if (!this.config?.cached) { // || set.value === undefined || set.value === null
-          return this.fetch(set, {config: config, linkFetchConfig: this.config})
-            .then(it => linkfetch(it, this.fetch, {config: config, linkFetchConfig: this.config, keys: set.keys}))
+        if (!this.config?.cached || set.value === undefined || set.value === null) {
+          return this.fetch(set, {config: config, linkfetchConfig: this.config})
+            .then(it => linkfetch(it, this.fetch, {config: config, linkfetchConfig: this.config, keys: set.keys}))
             .then(it => {
+              delete (it as any)[MetaValue];
+              delete (it as any)[MetaFetch];
               if (this.config?.disableSync) {
                 return it;
               } else {

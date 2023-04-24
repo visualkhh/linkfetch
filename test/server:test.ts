@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FetchProvider } from 'linkfetch';
+import { executeProvider, FetchProviderDoc } from 'linkfetch';
 
 const corsOptions = {
   origin: '*',
@@ -20,30 +20,33 @@ type User = {
   }
 }
 
-const root: FetchProvider<User, any> = {
-  $data: (id: string) => {
+type Config = { id: string };
+const root: FetchProviderDoc<User, Config> = {
+  $data: async (config) => {
     return {
       name: 'linkfetch',
-      id: id,
+      id: config.id,
       address: {
-        $ref: `http://localhost:3000/users/${id}/address`
+        $ref: `http://localhost:3000/users/${config.id}/address`
       }
     }
   },
   address: {
-    $data: (id: string) => {
+    $data: async (config) => {
       return {
         zip: '6484',
         detail: {
-          $ref: `http://localhost:3000/users/${id}/address/detail`
+          // first: 'first',
+          // last: 'last',
+          $ref: `http://localhost:3000/users/${config.id}/address/detail`
         }
       }
     },
     detail: {
-      $data: (id: string) => {
+      $data: async (config) => {
         return {
-          first: `first-88 ${id}`,
-          last: `last-64-${id}`
+          first: `first-88 ${config.id}`,
+          last: `last-64-${config.id}`
         }
       }
     }
@@ -56,18 +59,16 @@ app.get('/', (req, res) => {
   res.send('Hello World! linkfetch server');
 });
 
-app.get('/users/:id', (req, res) => {
-  res.json(root.$data(req.params.id));
+app.get('/users/:id', async (req, res) => {
+  const data = await executeProvider<User, Config>(root, [], {id: req.params.id});
+  res.json(data);
 });
 
 app.get('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3);
   console.log('request path', paths);
-  let target = root;
-  for (const path of paths) {
-    target = (target as any)[path];
-  }
-  res.json(target.$data(req.params.id));
+  const data = await executeProvider(root, paths, {id: req.params.id});
+  res.json(data);
 });
 
 app.listen(3000, () => {

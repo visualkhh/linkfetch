@@ -142,19 +142,73 @@ console.log(products, fetchObject.product!.products);
 console.log(JSON.stringify(fetchObject));
 ```
 
-# field path access
+# data provider
+```typescript
+import { executeProvider, FetchProviderDoc } from 'linkfetch';
 
+type User = {
+  name: string;
+  id: string;
+  address: {
+    detail: {
+      first: string;
+      last: string;
+    };
+    zip: string;
+  }
+}
+
+type Config = { id: string };
+const root: FetchProviderDoc<User, Config> = {
+  $data: async (config) => {
+    return {
+      name: 'linkfetch',
+      id: config.id,
+      address: {
+        $ref: `http://localhost:3000/users/${config.id}/address`
+      }
+    }
+  },
+  address: {
+    $data: async (config) => {
+      return {
+        zip: '6484',
+        detail: {
+          // first: 'first',
+          // last: 'last',
+          $ref: `http://localhost:3000/users/${config.id}/address/detail`
+        }
+      }
+    },
+    detail: {
+      $data: async (config) => {
+        return {
+          first: `first-88 ${config.id}`,
+          last: `last-64-${config.id}`
+        }
+      }
+    }
+  }
+}
+
+const rootData = await executeProvider<User, Config>(root, [], {id: req.params.id});
+res.json(rootData);
+
+const addressData = await executeProvider<User, Config>(root, ['address'], {id: req.params.id});
+res.json(addressData);
+```
+
+# field path access
 ```typescript
 const products = await fetchObject.$$value('product.products');
 ```
 
 # field path fetch
-
 ```typescript
 const products = await fetchObject.$$fetch('product.products');
 ```
 
-# api
+# api doc
 
 - linkfetch
     - parameter
@@ -163,8 +217,21 @@ const products = await fetchObject.$$fetch('product.products');
         - options: linkfetchConfig
 
 ```typescript
-export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> {/*...*/
-};
+export const PrefixField = '$' as const;
+export type PrefixFieldType = typeof PrefixField;
+export const ProviderData = '$data' as const;
+export type ProviderDataType = typeof ProviderData;
+
+export const PrefixMetaField = '$$' as const;
+export type PrefixMetaFieldType = typeof PrefixMetaField;
+export const MetaValue = `${PrefixMetaField}value` as const;
+export type MetaValueType = typeof MetaValue;
+export const MetaFetch = `${PrefixMetaField}fetch` as const;
+export type MetaFetchType = typeof MetaFetch;
+
+export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> {/*...*/};
+export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys: string[] | string, config?: C) => {/*...*/}
+export const execute = async (target: any, keys: string[] | string, parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {/*...*/}
 
 export type FetchFieldType<T> = T;
 export type FetchObjectType<T> = {
@@ -177,5 +244,12 @@ type FetchConfig = {
   defaultNull?: boolean; // unfetch default value is null 
   cached?: boolean; // cached
   disableSync?: boolean; // default false 
-} 
+}
+export type FetchDoc = { $ref: string };
+export type FetchProviderDoc<T, C> = {
+    [ProviderData]: (c: C) => Promise<{[key in keyof T]: T[key] extends object ? FetchDoc | T[key]  : T[key]}>;
+  }
+  & {
+  [P in keyof T as T[P] extends object ? P : never]?: FetchProviderDoc<T[P], C>;
+}
 ```

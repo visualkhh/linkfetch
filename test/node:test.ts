@@ -23,8 +23,14 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
 (async () => {
   const data = createUserDoc('1');
   const fetchObject = await linkfetch<User, UserConfig>(data, (data, config) => {
-    return fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json());
-  });
-  const detail = fetchObject.$$fetch('address.detail', {id: '2'});
+    if (data.doc) {
+      return fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json());
+    } else {
+      return Promise.resolve(data.value);
+    }
+  }, {linkfetchConfig: {cached: true}});
+  const detail = await fetchObject.$$fetch('address.detail', {id: '2'});
+  console.log('---->', detail);
+  await fetchObject.$$fetch('address.detail', {id: '2'});
   console.log(JSON.stringify(fetchObject));
 })();

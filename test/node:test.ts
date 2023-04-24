@@ -4,7 +4,10 @@ type User = {
   name: string;
   id: string;
   address: {
-    detail: string;
+    detail: {
+      first: string;
+      last: string;
+    };
     zip: string;
   }
 }
@@ -29,6 +32,11 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
   const fetchObject = await linkfetch<User, UserConfig>(data, (data, config) => {
     return fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json());
   });
-  await fetchObject.$address({id: '1'});
+  // const addr = await fetchObject.$address({id: '1'});
+  const a = await fetchObject.$$fetch('address.detail');
+  console.log('------>', a);
+  // const addr = fetchObject.address ?? await fetchObject.$address({id: '1'});
+  // console.log(JSON.stringify(addr));
+
   console.log(JSON.stringify(fetchObject));
 })();

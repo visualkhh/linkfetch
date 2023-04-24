@@ -1,17 +1,21 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { linkfetch, FetchObjectType, FetchCallBack, ValueDocSet } from 'linkfetch';
-const corsOptions ={
-  origin:'*',
-  credentials:true,            //access-control-allow-credentials:true
-  optionSuccessStatus:200,
+import { FetchCallBack, FetchObjectType, linkfetch, ValueDocSet } from 'linkfetch';
+
+const corsOptions = {
+  origin: '*',
+  credentials: true,            //access-control-allow-credentials:true
+  optionSuccessStatus: 200,
 }
 
 type User = {
   name: string;
   id: string;
   address: {
-    detail: string;
+    detail: {
+      first: string;
+      last: string;
+    };
     zip: string;
   }
 }
@@ -29,10 +33,16 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
 }
 
 const fetchUserRepository: FetchCallBack<UserConfig> = async (data: ValueDocSet, config) => {
+  console.log('---------', data);
   if (data.fieldName === 'address') {
     return {
-      detail: `2 Frank Drive, Shelton,ct, 6484  United States id(${config?.config?.id})`,
+      detail: {$ref: `http://localhost:3000/users/${config?.config?.id}/address/detail`},
       zip: '6484'
+    }
+  } else if (data.fieldName === 'detail') {
+    return {
+      first: 'first-88',
+      last: 'last-64'
     }
   } else {
     return {
@@ -54,10 +64,24 @@ app.get('/users/:id', (req, res) => {
 
 app.get('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3);
+  console.log('------>', paths);
   const id = req.params.id;
   const fetchObject = await linkfetch<User, UserConfig>(createUserDoc(req.params.id), fetchUserRepository);
-  const data = await fetchObject.$$fetch(paths, {id: id});
-  res.json(data);
+  if (paths[paths.length - 1] === 'address') {
+    res.json({
+      detail: {$ref: `http://localhost:3000/users/${id}/address/detail`},
+      zip: '6484'
+    });
+  } else if (paths[paths.length - 1] === 'detail') {
+    res.json({
+      first: 'first-88',
+      last: 'last-64'
+    });
+  } else {
+
+    const data = await fetchObject.$$fetch(paths, {id: id});
+    res.json(data);
+  }
 });
 
 

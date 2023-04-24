@@ -88,7 +88,7 @@ export type FetchCallBack<C = any> = (data: ValueDocSet, config?: { config?: C, 
 export const execute = async (target: any, keys: string[] | string, fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>, parameter?: any[]) => {
   let t = target;
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-  for (const key in keyArray) {
+  for (const key of keyArray) {
     if (t === undefined || t === null) {
       return undefined;
     }

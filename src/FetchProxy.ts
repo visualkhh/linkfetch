@@ -1,19 +1,11 @@
-import {
-  FetchCallBack,
-  FetchDoc,
-  findFieldSetByFetchMethodName,
-  isFetchDoc,
-  isFetchMethodName,
-  linkfetch,
-  LinkFetchConfig
-} from './index';
+import { FetchCallBack, FetchConfig, FetchDoc, findFieldSetByFetchMethodName, isFetchDoc, isFetchMethodName, linkfetch } from './index';
 
 export const FetchProxyKey = '_FetchProxy_isProxy';
 
 export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
   private docs = new Map<string | symbol, FetchDoc>();
 
-  constructor(private original: any, private fetch: FetchCallBack<C>, private keys: string[], private config?: LinkFetchConfig) {
+  constructor(private original: any, private fetch: FetchCallBack<C>, private keys: string[], private config?: FetchConfig) {
   }
 
   get(target: T, p: string | symbol, receiver: any): any {
@@ -36,7 +28,7 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
         set.keys.push(set.fieldName);
       }
       return (config?: C) => {
-        if (this.config?.everyFetch || set.value === undefined || set.value === null) {
+        if (!this.config?.cached) { // || set.value === undefined || set.value === null
           return this.fetch(set, {config: config, linkFetchConfig: this.config})
             .then(it => linkfetch(it, this.fetch, {config: config, linkFetchConfig: this.config, keys: set.keys}))
             .then(it => {
@@ -47,10 +39,10 @@ export class FetchProxy<T extends object, C> implements ProxyHandler<T> {
                 return Reflect.get(target, set.fieldName ?? '', receiver);
               }
             });
-        } else if (set.value) {
+        } else if (this.config?.cached && set.value) {
           return Promise.resolve(set.value);
         } else {
-          return Promise.resolve(undefined);
+          return Promise.resolve(this.config?.defaultNull ? null : undefined);
         }
       };
     }

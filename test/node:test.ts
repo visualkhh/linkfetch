@@ -18,13 +18,6 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
   return {
     $ref: `http://localhost:3000/users/${id}`
   }
-  // return {
-  //   name: 'linkfetch',
-  //   id: id,
-  //   address: {
-  //     $ref: `http://localhost:3000/users/${id}/address`
-  //   }
-  // }
 }
 
 (async () => {
@@ -32,11 +25,6 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
   const fetchObject = await linkfetch<User, UserConfig>(data, (data, config) => {
     return fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json());
   });
-  // const addr = await fetchObject.$address({id: '1'});
-  const a = await fetchObject.$$fetch('address.detail');
-  console.log('------>', a);
-  // const addr = fetchObject.address ?? await fetchObject.$address({id: '1'});
-  // console.log(JSON.stringify(addr));
-
+  const detail = fetchObject.$$fetch('address.detail', {id: '2'});
   console.log(JSON.stringify(fetchObject));
 })();

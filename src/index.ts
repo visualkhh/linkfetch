@@ -6,8 +6,14 @@ export const PrefixField = '$' as const;
 export type PrefixFieldType = typeof PrefixField;
 
 export type FetchDoc = { $ref: string };
-export type LinkFetchConfig = { defaultNull?: boolean; everyFetch?: boolean; disableSync?: boolean };
-export type ValueDocSet<T = any> = { fieldName?: string, fetchName?: string, keys?: string[], value?: T, doc?: FetchDoc };
+export type FetchProvider<T, C> = {
+    $data: (c: C) => {[key in keyof T]: T[key] extends object ? FetchDoc : T[key]};
+  }
+  & {
+  [P in keyof T as T[P] extends object ? P : never]: FetchProvider<T[P], C>;
+}
+export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
+export type FetchValueDocSet<T = any> = { fieldName?: string, fetchName?: string, keys?: string[], value?: T, doc?: FetchDoc };
 
 export const isFetchProxy = (value: any): boolean => {
   return typeof value === 'object' && FetchProxyKey in value;
@@ -21,7 +27,7 @@ export const isFetchMethodName = (name: string | symbol): name is string => {
 export const findFieldNameByFetchMethodName = (name: string): string => {
   return name.replace(RegExp(`^\\${PrefixField}`), '');
 }
-export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: LinkFetchConfig): ValueDocSet<T> => {
+export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: FetchConfig): FetchValueDocSet<T> => {
   const fieldKey = findFieldNameByFetchMethodName(name);
   const docOrValue = data[fieldKey];
   const value = isFetchDoc(docOrValue) ? (config?.defaultNull ? null : undefined) : docOrValue;
@@ -83,7 +89,7 @@ export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 } | FetchDoc;
 
-export type FetchCallBack<C = any> = (data: ValueDocSet, config?: { config?: C, linkFetchConfig?: LinkFetchConfig }) => Promise<any>;
+export type FetchCallBack<C = any> = (data: FetchValueDocSet, config?: { config?: C, linkFetchConfig?: FetchConfig }) => Promise<any>;
 
 export const execute = async (target: any, keys: string[] | string, fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>, parameter?: any[]) => {
   let t = target;
@@ -110,7 +116,7 @@ export type MetaFnc<T, C> = {
   [P in keyof MetaFncBase<T, C> as `${PrefixMetaFieldType}${P}`]: MetaFncBase<T, C>[P];
 }
 
-export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: LinkFetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
+export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
   const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
   const proxy = (field: any, keys: string[] = []) => {
     if (isFetchProxy(field) || isFetchDoc(field)) {
@@ -130,7 +136,7 @@ export const linkfetch = async <T extends object, C = any>(docObject: FetchObjec
   }
 
   if (isFetchDoc(doc)) {
-    const set: ValueDocSet = {fieldName: undefined, fetchName: undefined, value: undefined, doc};
+    const set: FetchValueDocSet = {fieldName: undefined, fetchName: undefined, value: undefined, doc};
     const returnData = await fetch(set, config);
     const proxy = linkfetch(returnData, fetch, config);
     return proxy as any;
@@ -148,8 +154,11 @@ export const linkfetch = async <T extends object, C = any>(docObject: FetchObjec
         keyArray[keyArray.length - 1] = `${PrefixField}${name}`;
       }
       return await execute(target, keyArray, async (target: any, prev: any, value: any, name: string) => {
+        console.log('------->', target, prev, value, name);
         if (value === undefined || value === null) {
-          return await prev[`${PrefixField}${name}`];
+          const data = await prev[`${PrefixField}${name}`](config);
+          console.log('-!!', `${PrefixField}${name}`, prev[`${PrefixField}${name}`], data);
+          return data;
         } else {
           return value;
         }

@@ -1,10 +1,10 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FetchCallBack, FetchObjectType, linkfetch, ValueDocSet } from 'linkfetch';
+import { FetchProvider } from 'linkfetch';
 
 const corsOptions = {
   origin: '*',
-  credentials: true,            //access-control-allow-credentials:true
+  credentials: true,
   optionSuccessStatus: 200,
 }
 
@@ -19,35 +19,33 @@ type User = {
     zip: string;
   }
 }
-type UserConfig = {
-  id: string;
-}
-const createUserDoc = (id: string): FetchObjectType<User> => {
-  return {
-    name: 'linkfetch',
-    id: id,
-    address: {
-      $ref: `http://localhost:3000/users/${id}/address`,
-    }
-  }
-}
 
-const fetchUserRepository: FetchCallBack<UserConfig> = async (data: ValueDocSet, config) => {
-  console.log('---------', data);
-  if (data.fieldName === 'address') {
+const root: FetchProvider<User, any> = {
+  $data: (id: string) => {
     return {
-      detail: {$ref: `http://localhost:3000/users/${config?.config?.id}/address/detail`},
-      zip: '6484'
+      name: 'linkfetch',
+      id: id,
+      address: {
+        $ref: `http://localhost:3000/users/${id}/address`
+      }
     }
-  } else if (data.fieldName === 'detail') {
-    return {
-      first: 'first-88',
-      last: 'last-64'
-    }
-  } else {
-    return {
-      detail: `no detail id(${config?.config?.id})`,
-      zip: 'no zip'
+  },
+  address: {
+    $data: (id: string) => {
+      return {
+        zip: '6484',
+        detail: {
+          $ref: `http://localhost:3000/users/${id}/address/detail`
+        }
+      }
+    },
+    detail: {
+      $data: (id: string) => {
+        return {
+          first: `first-88 ${id}`,
+          last: `last-64-${id}`
+        }
+      }
     }
   }
 }
@@ -59,31 +57,18 @@ app.get('/', (req, res) => {
 });
 
 app.get('/users/:id', (req, res) => {
-  res.json(createUserDoc(req.params.id));
+  res.json(root.$data(req.params.id));
 });
 
 app.get('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3);
-  console.log('------>', paths);
-  const id = req.params.id;
-  const fetchObject = await linkfetch<User, UserConfig>(createUserDoc(req.params.id), fetchUserRepository);
-  if (paths[paths.length - 1] === 'address') {
-    res.json({
-      detail: {$ref: `http://localhost:3000/users/${id}/address/detail`},
-      zip: '6484'
-    });
-  } else if (paths[paths.length - 1] === 'detail') {
-    res.json({
-      first: 'first-88',
-      last: 'last-64'
-    });
-  } else {
-
-    const data = await fetchObject.$$fetch(paths, {id: id});
-    res.json(data);
+  console.log('request path', paths);
+  let target = root;
+  for (const path of paths) {
+    target = (target as any)[path];
   }
+  res.json(target.$data(req.params.id));
 });
-
 
 app.listen(3000, () => {
   console.log('Server started at port 3000');

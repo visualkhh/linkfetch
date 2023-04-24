@@ -145,7 +145,7 @@ console.log(JSON.stringify(fetchObject));
 # field path access
 
 ```typescript
-const products = fetchObject.$$value('product.products');
+const products = await fetchObject.$$value('product.products');
 ```
 
 # field path fetch
@@ -163,7 +163,7 @@ const products = await fetchObject.$$fetch('product.products');
         - options: linkfetchConfig
 
 ```typescript
-export async function linkfetch<T, C>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: linkfetchConfig }): Promise<FetchObjectPromiseType<T, C>> {/*...*/
+export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkFetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> {/*...*/
 };
 
 export type FetchFieldType<T> = T;
@@ -171,11 +171,11 @@ export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 }
 type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
-type ValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc, keys: string[] };
+type FetchValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc, keys: string[] };
 // keys: ex) ['product', 'products'] field depth path ← obj.product.products
-type linkfetchConfig = {
+type FetchConfig = {
   defaultNull?: boolean; // unfetch default value is null 
-  everyFetch?: boolean; // every fetch   default false
+  cached?: boolean; // cached
   disableSync?: boolean; // default false 
 } 
 ```

@@ -66,7 +66,7 @@ app.get('/users/:id', async (req, res) => {
 
 app.get('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3);
-  console.log('request path', paths);
+  console.log('request path', paths, req.params.id);
   const data = await executeProvider(root, paths, {id: req.params.id});
   res.json(data);
 });

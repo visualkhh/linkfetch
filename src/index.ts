@@ -80,17 +80,21 @@ type Optional<T> = T | undefined;
 //   [P in keyof T as T[P] extends never ? P : never]: T[P];
 // }
 // type aa = NonNullable<FetchObjectPromiseType<any, any>>;
-type ExcludeNever<T> = {
-  [P in keyof T as T[P] extends never ? never : P]: T[P];
-}
-export type FetchFieldMethodPromiseType<T, C> = (config?: C) => Promise<T>;
-export type FetchObjectPromiseType<T, C> = ExcludeNever<{
+// type ExcludeNever<T> = {
+//   [P in keyof T as T[P] extends never ? never : P]: T[P];
+// }
+// export type FetchFieldMethodPromiseType<T, C> = Promise<T | C>;
+// export type FetchFieldPromiseType<T, C> = {
+//   [P in keyof T]?: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> extends any[] ? FetchFieldMethodPromiseType<T[P], C> : FetchFieldPromiseType<FetchFieldMethodPromiseType<T[P], C>, C> : FetchFieldMethodPromiseType<T[P], C>;
+// };
+export type FetchObjectPromiseType<T, C> = {
   // @ts-ignore
-  [P in keyof T as `${PrefixFieldType}${P}`]: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> : never;
+  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never ]: (config?: C) => Promise<T>;
 } & {
   // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
-  [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
-}>;
+  // [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
+  [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? T[P] : FetchObjectPromiseType<T[P], C> : T[P];
+};
 export type FetchFieldType<T> = T;
 export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;

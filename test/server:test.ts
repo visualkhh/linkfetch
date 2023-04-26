@@ -60,6 +60,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/users/:id', async (req, res) => {
+  console.log('request path', req.path, req.params.id);
   const data = await executeProvider<User, Config>(root, [], {id: req.params.id});
   res.json(data);
 });

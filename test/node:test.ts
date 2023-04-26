@@ -1,4 +1,4 @@
-import { FetchObjectType, linkfetch, FetchFieldPromiseType } from 'linkfetch';
+import { FetchObjectType, linkfetch } from 'linkfetch';
 
 type User = {
   name: string;
@@ -32,6 +32,7 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
   const detail = await fetchObject.$$fetch('address.detail', {id: '2'});
   console.log('---->', detail);
   await fetchObject.$$fetch('address.detail', {id: '2'});
+  const g = await fetchObject.$address();
   console.log(JSON.stringify(fetchObject));
   // const zz = fetchObject as FetchFieldPromiseType<User, UserConfig>;
   // const z = await (zz.id = Promise.resolve('s'));

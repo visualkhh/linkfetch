@@ -89,7 +89,7 @@ type Optional<T> = T | undefined;
 // };
 export type FetchObjectPromiseType<T, C> = {
   // @ts-ignore
-  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never ]: (config?: C) => Promise<T>;
+  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never ]: (config?: C) => Promise<T[P]>;
 } & {
   // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
   // [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;

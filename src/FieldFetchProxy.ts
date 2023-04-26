@@ -23,7 +23,6 @@ export class FieldFetchProxy<T extends object, C> implements ProxyHandler<T> {
     // console.log('get', target, p, receiver);
     const value = Reflect.get(target, p, receiver);
     const keys = [...this.keys];
-    console.log('-----------', target, p, value, keys);
     return (config?: C) => {
       if (!this.config?.cached || value === undefined || value === null) {
         return this.fetch({fetchName: p.toString(), keys, value}, {config: config, linkfetchConfig: this.config})

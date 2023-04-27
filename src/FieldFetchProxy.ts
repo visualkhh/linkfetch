@@ -22,27 +22,36 @@ export class FieldFetchProxy<T extends object, C> implements ProxyHandler<T> {
     // console.log('isProxy', '_FetchProxy_isProxy' in target, '_FetchProxy_isProxy' in receiver);
     // console.log('get', target, p, receiver);
     const value = Reflect.get(target, p, receiver);
+    // if (value === undefined) {
+    //   return undefined;
+    // }
     const keys = [...this.keys];
+    // return value;
     return (config?: C) => {
-      if (!this.config?.cached || value === undefined || value === null) {
-        return this.fetch({fetchName: p.toString(), keys, value}, {config: config, linkfetchConfig: this.config})
-          .then(it => linkfieldfetch(it, this.fetch, {config: config, linkfetchConfig: this.config, keys}))
-          .then(it => {
-            delete (it as any)[MetaValue];
-            delete (it as any)[MetaFetch];
-            if (this.config?.disableSync) {
-              return it;
-            } else {
-              Reflect.set(target, p, it, receiver);
-              return Reflect.get(target, p, receiver);
-            }
-          });
-      } else if (this.config?.cached && value) {
-        return Promise.resolve(value);
-      } else {
-        return Promise.resolve(this.config?.defaultNull ? null : undefined);
-      }
+      return Promise.resolve(undefined);
+      // if (!this.config?.cached || value === undefined || value === null) {
+      //   return this.fetch({fetchName: p.toString(), keys, value}, {config: config, linkfetchConfig: this.config})
+      //     .then(it => {
+      //       console.log('??????',it)
+      //       return linkfieldfetch(it, this.fetch, {config: config, linkfetchConfig: this.config, keys});
+      //     })
+      //     .then(it => {
+      //       delete (it as any)[MetaValue];
+      //       delete (it as any)[MetaFetch];
+      //       if (this.config?.disableSync) {
+      //         return it;
+      //       } else {
+      //         Reflect.set(target, p, it, receiver);
+      //         return Reflect.get(target, p, receiver);
+      //       }
+      //     });
+      // } else if (this.config?.cached && value) {
+      //   return Promise.resolve(value);
+      // } else {
+      //   return Promise.resolve(this.config?.defaultNull ? null : undefined);
+      // }
     };
+    return value;
   }
 
   has(target: T, p: string | symbol): boolean {

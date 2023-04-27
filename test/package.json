@@ -5,9 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "tsx watch test.ts",
-    "node:test": "tsx watch node:test.ts",
+    "node:test": "tsx node:test.ts",
+    "node:test:watch": "tsx watch node:test.ts",
     "server:test": "tsx watch server:test.ts",
-    "proxy:test": "tsx watch proxy:test.ts"
+    "server:test:watch": "tsx watch server:test.ts",
+    "proxy:test": "tsx proxy:test.ts",
+    "proxy:test:watch": "tsx watch proxy:test.ts"
   },
   "keywords": [],
   "author": "",

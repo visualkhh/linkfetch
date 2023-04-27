@@ -15,7 +15,7 @@ export type MetaFetchType = typeof MetaFetch;
 
 export type FetchDoc = { $ref: string };
 export type FetchProviderDoc<T, C> = {
-    [ProviderData]: (c: C) => Promise<{[key in keyof T]: T[key] extends object ? FetchDoc | T[key] : T[key]}>;
+    [ProviderData]: (c: C) => Promise<{ [key in keyof T]: T[key] extends object ? FetchDoc | T[key] : T[key] }>;
   }
   & {
   [P in keyof T as T[P] extends object ? P : never]?: FetchProviderDoc<T[P], C>;
@@ -91,9 +91,12 @@ export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, na
 // export type FetchFieldPromiseType<T, C> = {
 //   [P in keyof T]?: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> extends any[] ? FetchFieldMethodPromiseType<T[P], C> : FetchFieldPromiseType<FetchFieldMethodPromiseType<T[P], C>, C> : FetchFieldMethodPromiseType<T[P], C>;
 // };
+export type FetchObjectFieldPromiseType<T, C> = {
+  [P in keyof T]: T[P] extends object ? T[P] extends any[] ? T[P] : (config?: C) => Promise<FetchObjectFieldPromiseType<T[P], C>> : T[P];
+};
 export type FetchObjectPromiseType<T, C> = {
   // @ts-ignore
-  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never ]: (config?: C) => Promise<T[P]>;
+  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never]: (config?: C) => Promise<T[P]>;
 } & {
   // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
   // [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
@@ -104,12 +107,31 @@ export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
 } | FetchDoc;
 
+export type FieldFetchCallBack<C = any> = (doc?: FetchDoc, config?: { config?: C, linkfetchConfig?: FetchConfig }) => Promise<any>;
 export type FetchCallBack<C = any> = (data: FetchValueDocSet, config?: { config?: C, linkfetchConfig?: FetchConfig }) => Promise<any>;
 export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys: string[] | string, config?: C) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
   keyArray.push(ProviderData);
   return await execute(target, keyArray, [config]);
 }
+// export const executeFieldFetch = <T, C>(target: any, keys: string | string[], c?: C): Promise<T> | undefined => {
+//   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
+//   // const chain: Promise<any>[] = [];
+//   let t = target;
+//   let promise: Promise<any> | undefined = undefined;
+//   keyArray.forEach(it => {
+//     console.log('target->', t, it);
+//     const next = (t as any)[it](c);
+//     if (promise) {
+//       promise.then(it => {
+//         return next;
+//       });
+//     } else {
+//       promise = next;
+//     }
+//   })
+//   return promise;
+// }
 export const execute = async (target: any, keys: string[] | string, parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {
   let t = target;
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
@@ -140,7 +162,7 @@ export const linkfetch = async <T extends object, C = any>(docObject: FetchObjec
     Object.entries(field).filter(([key, value]) => typeof value === 'object' && !Array.isArray(value)).forEach(([key, value]) => {
       if (!isFetchProxy(value)) {
         const subKeys = [...keys, key];
-        doc[key] = proxy(value, subKeys);
+        field[key] = proxy(value, subKeys);
       }
     });
 
@@ -179,48 +201,31 @@ export const linkfetch = async <T extends object, C = any>(docObject: FetchObjec
   }
   return Object.assign(target, metaFnc);
 }
-export const linkfieldfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
-  const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
-  const proxy = (field: any, keys: string[] = []) => {
-    console.log('field', field, keys);
-    if (isFieldFetchProxy(field) || isFetchDoc(field)) {
-      return field;
-    }
 
-    // Object.entries(field).filter(([key, value]) => typeof value === 'object' && !Array.isArray(value)).forEach(([key, value]) => {
-    //   if (!isFieldFetchProxy(value)) {
-    //     const subKeys = [...keys, key];
-    //     doc[key] = proxy(value, subKeys);
-    //   }
-    // });
-
-    const inKeys = [...(config?.keys ?? [])];
-    inKeys.push(...keys);
-    return new Proxy(field, new FieldFetchProxy<T, C>(field, fetch, inKeys, config?.linkfetchConfig));
-  }
-
-  if (isFetchDoc(doc)) {
-    const set: FetchValueDocSet = {fieldName: undefined, fetchName: undefined, value: undefined, doc};
-    const returnData = await fetch(set, config);
-    const proxy = linkfieldfetch(returnData, fetch, config);
-    return proxy as any;
-  }
-
-  const target = proxy(doc);
-  const metaFnc: MetaFnc<T, C> = {
-    $$value: async (keys: string[] | string) => {
-      return await execute(target, keys);
-    },
-    $$fetch: async (keys: string[] | string, config?: C) => {
-      const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-      return await execute(target, keyArray, [config], async (target: any, prev: any, value: any, name: string) => {
-        if (value === undefined || value === null) {
-          return await prev[name](config);
-        } else {
-          return value;
+export const linkfieldfetch = <T extends object, C = any>(data: FetchObjectType<T>, fetch: FieldFetchCallBack<C>, config?: { linkfetchConfig?: FetchConfig }): (config?: C) => Promise<FetchObjectFieldPromiseType<T, C>> => {
+  const change = (field: any) => {
+    // if (isFetchProxy(field) || isFetchDoc(field)) {
+    //   return field;
+    // }
+    Object.entries(field).filter(([key, value]) => typeof value === 'object' && !isFetchDoc(data) && !Array.isArray(value)).forEach(([key, value]) => {
+      field[key] = change(value);
+    });
+    const doc = isFetchDoc(field) ? field : undefined;
+    let cache: any = undefined;
+    return (c?: C) => {
+      if (config?.linkfetchConfig?.cached && cache) {
+        return cache;
+      }
+      return fetch(doc, {config: c, linkfetchConfig: config?.linkfetchConfig}).then(it => {
+        linkfieldfetch(it, fetch, config)
+        if (config?.linkfetchConfig?.cached) {
+          cache = it;
         }
-      });
-    }
+        return it;
+      })
+    };
   }
-  return Object.assign(target, metaFnc);
+
+  const target = change(data);
+  return target;
 }

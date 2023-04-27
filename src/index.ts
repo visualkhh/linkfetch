@@ -114,24 +114,24 @@ export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys
   keyArray.push(ProviderData);
   return await execute(target, keyArray, [config]);
 }
-// export const executeFieldFetch = <T, C>(target: any, keys: string | string[], c?: C): Promise<T> | undefined => {
-//   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-//   // const chain: Promise<any>[] = [];
-//   let t = target;
-//   let promise: Promise<any> | undefined = undefined;
-//   keyArray.forEach(it => {
-//     console.log('target->', t, it);
-//     const next = (t as any)[it](c);
-//     if (promise) {
-//       promise.then(it => {
-//         return next;
-//       });
-//     } else {
-//       promise = next;
-//     }
-//   })
-//   return promise;
-// }
+export const executeFieldFetch = <T, C>(target: any, keys: string | string[], c?: C): Promise<T> | undefined => {
+  const keyArray = Array.isArray(keys) ? keys : keys.split('.');
+
+  // const chain: Promise<any>[] = [];
+  let t = target;
+  let promise: Promise<any> | undefined = undefined;
+  keyArray.forEach(keyIt => {
+    if (promise) {
+      promise = promise.then(it => {
+        console.log('!@->', it, keyIt)
+        return it[keyIt](c);
+      });
+    } else {
+      promise = (t as any)[keyIt](c);
+    }
+  })
+  return promise;
+}
 export const execute = async (target: any, keys: string[] | string, parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {
   let t = target;
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
@@ -214,7 +214,7 @@ export const linkfieldfetch = <T extends object, C = any>(data: FetchObjectType<
     let cache: any = undefined;
     return (c?: C) => {
       if (config?.linkfetchConfig?.cached && cache) {
-        return cache;
+        return Promise.resolve(cache);
       }
       return fetch(doc, {config: c, linkfetchConfig: config?.linkfetchConfig}).then(it => {
         linkfieldfetch(it, fetch, config)

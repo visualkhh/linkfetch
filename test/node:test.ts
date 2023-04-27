@@ -1,8 +1,6 @@
 import {
   executeFieldFetch, FetchObjectType, linkfetch, linkfieldfetch,
 } from 'linkfetch';
-import {FetchProxyKey} from 'linkfetch/FetchProxy';
-import {FieldFetchProxyKey} from 'linkfetch/FieldFetchProxy';
 type User = {
   name: string;
   id: string;
@@ -38,10 +36,8 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
 // })();
 
 (async () => {
-  console.log('start!!')
   const data = createUserDoc('1');
-  const fetchObject = linkfieldfetch<User, UserConfig>(data, (data, config) => {
-    console.log('fetch!!!', data, config);
+  const fetchObject = await  linkfieldfetch<User, UserConfig>(data, (data, config) => {
     if (data) {
       const responsePromise = fetch(data.$ref, {method: 'GET'});
       return responsePromise.then(it => it.json());
@@ -49,14 +45,23 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
       return Promise.resolve(undefined);
     }
   }, {linkfetchConfig: {cached: true}})();
-  const f = await fetchObject;
 
-  // const zzz  = await executeFieldFetch(f, 'address.detail', {id: '2'});
+  // console.group('first')
+  const zzz  = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
+  // console.groupEnd();
+  // console.group('second')
+  const zz1  = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
+  // console.groupEnd();
+  // const aaa = await f.address().then(it => it.detail())
+  // console.log('----->', aaa);
+  // const aaa2 = await f.address().then(it => it.detail())
+  // console.log('----->', aaa2);
   // console.log('----->', zzz);
-  const a = await f.address();
-  const d = await a.detail();
-  const d2 = await a.detail();
-  console.log('-----',  f)
-  console.log('-----',  d)
-  console.log('-----',  d2)
+  // const a = await fetchObjectf.address();
+  // const d = await a.detail();
+  // const d2 = await a.detail();
+  // const d3 = await a.detail();
+  // console.log('-----',  f)
+  // console.log('-----',  d)
+  // console.log('-----',  d2)
 })();

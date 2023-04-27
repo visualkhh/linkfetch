@@ -63,6 +63,51 @@ console.log(product1); // or console.log(fetchObject.product1)
 JSON.stringify(fetchObject) // {...}
 ```
 
+
+# remote fieldfetch
+
+```typescript
+import {
+  executeFieldFetch, FetchObjectType, linkfetch, linkfieldfetch,
+} from 'linkfetch';
+type User = {
+  name: string;
+  id: string;
+  address: {
+    detail: {
+      first: string;
+      last: string;
+    };
+    zip: string;
+  }
+}
+type UserConfig = {
+  id: string;
+}
+const createUserDoc = (id: string): FetchObjectType<User> => {
+  return {
+    $ref: `http://localhost:3000/users/${id}`
+  }
+}
+
+(async () => {
+  const data = createUserDoc('1');
+  const fetchObject = await linkfieldfetch<User, UserConfig>(data, (data, config) => {
+    if (data) {
+      const responsePromise = fetch(data.$ref, {method: 'GET'});
+      return responsePromise.then(it => it.json());
+    } else {
+      return Promise.resolve(undefined);
+    }
+  })();
+  const adress = await fetchObjectf.address();  // address(config..);
+  const detail = await a.detail(); 
+  // or  await executeFieldFetch(fetchObject, 'address.detail');
+})();
+```
+
+
+
 # local fetch
 
 ```typescript

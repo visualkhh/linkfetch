@@ -101,7 +101,7 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
     }
   })();
   const adress = await fetchObjectf.address();  // address(config..);
-  const detail = await a.detail(); 
+  const detail = await adress.detail(); 
   // or  await executeFieldFetch(fetchObject, 'address.detail');
 })();
 ```

@@ -13,6 +13,38 @@ export type MetaValueType = typeof MetaValue;
 export const MetaFetch = `${PrefixMetaField}fetch` as const;
 export type MetaFetchType = typeof MetaFetch;
 
+export type GetPath<T, P extends string> =
+  P extends `${infer K}.${infer R}`
+    ?
+      K extends keyof T ? GetPath<T[K], R> : never
+    :
+    P extends keyof T ? T[P] : (P extends string ? T : never);
+
+export type DiveIntoObject<Obj, Keys extends unknown[]> =
+  Keys['length'] extends 0
+    ? Obj
+    : Keys extends [
+      infer FirstKey extends keyof Obj, ...infer Rest
+    ]
+    ? DiveIntoObject<Obj[FirstKey], Rest>
+      :never;
+// const a = {
+//   name: 'st',
+//   addr: {
+//     good: 'good'
+//   }
+// } as const
+// type A = typeof a;
+// // type B = GetPath<A, 'addr.good'>;
+// const zz = '333' as const;
+// type B = GetPath<A, 'addr.good'>;
+// const b: B = {good: 'good'};
+// type C = DiveIntoObject<A, []>;
+// const is: C = {name: 'st', addr: {good: 'good'}}
+// // const is: C = 'good'
+// console.log(is, b)
+
+// export type GetPath
 export type FetchObjectPromiseType<T, C> = {
   // @ts-ignore
   [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never]: (config?: C) => Promise<T[P]>;
@@ -31,6 +63,7 @@ export type MateFncFetch<T, C> = {
 export type MateFncFieldFetch<T, C> = {
   // eslint-disable-next-line no-use-before-define
   [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectFieldPromiseType<R, C>>
+  // [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectFieldPromiseType<R, C>>
 }
 export type MetaFnc<T, C> = MetaFncValue & MateFncFetch<T, C>;
 export type FetchObjectFieldPromiseType<T, C> = {

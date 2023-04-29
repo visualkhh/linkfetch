@@ -232,8 +232,8 @@ export const linkfieldfetch = <T extends object, C = any>(data: FetchObjectType<
       }).then(it => {
         const metaFnc: MateFncFieldFetch<T, C> = {
           // @ts-ignore
-          $$fetch: async (keys: string[] | string, config?: C) => {
-            return executeFieldFetch(it, keys, config);
+          $$fetch: async <R = any>(keys: string[] | string, config?: C) => {
+            return executeFieldFetch<R, C>(it, keys, config);
           }
         }
         return Object.assign(it, metaFnc);

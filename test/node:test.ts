@@ -1,7 +1,7 @@
 import {
   executeFieldFetch, FetchObjectType, linkfetch, linkfieldfetch,
 } from 'linkfetch';
-type User = {
+export type User = {
   name: string;
   id: string;
   address: {
@@ -47,14 +47,21 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
   }, {linkfetchConfig: {cached: true}})();
 
   console.log('----->', fetchObject);
-  const z = await fetchObject.$$fetch('address', {id: '2'});
+  const z = await fetchObject.$$fetch<{
+    detail: {
+      first: string;
+      last: string;
+    };
+    zip: string;
+  }>('address', {id: '2'});
+  const d = await z.detail()
   const zz = await z.$$fetch<string>('detail', {id: '2'});
   // console.group('first')
   // const zzz = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
   // console.groupEnd();
   // console.group('second')
   // const zz1 = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
-  console.log('----->', z, zz);
+  console.log('----->', d, z, zz);
   // console.log('----->', zzz);
   // console.log('----->', zz1);
   // console.groupEnd();

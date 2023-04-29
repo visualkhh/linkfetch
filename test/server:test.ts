@@ -72,6 +72,12 @@ app.get('/users/:id/*', async (req, res) => {
   res.json(data);
 });
 
+app.get('/test', async (req, res) => {
+  // Promise.reject('test error')
+  // throw new Error('test error');
+  res.json({n: 77});
+});
+
 app.listen(3000, () => {
   console.log('Server started at port 3000');
 });

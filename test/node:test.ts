@@ -37,7 +37,7 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
 
 (async () => {
   const data = createUserDoc('1');
-  const fetchObject = await  linkfieldfetch<User, UserConfig>(data, (data, config) => {
+  const fetchObject = await linkfieldfetch<User, UserConfig>(data, (data, config) => {
     if (data) {
       const responsePromise = fetch(data.$ref, {method: 'GET'});
       return responsePromise.then(it => it.json());
@@ -46,11 +46,17 @@ const createUserDoc = (id: string): FetchObjectType<User> => {
     }
   }, {linkfetchConfig: {cached: true}})();
 
+  console.log('----->', fetchObject);
+  const z = await fetchObject.$$fetch('address', {id: '2'});
+  const zz = await z.$$fetch<string>('detail', {id: '2'});
   // console.group('first')
-  const zzz  = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
+  // const zzz = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
   // console.groupEnd();
   // console.group('second')
-  const zz1  = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
+  // const zz1 = await executeFieldFetch(fetchObject, 'address.detail', {id: '2'});
+  console.log('----->', z, zz);
+  // console.log('----->', zzz);
+  // console.log('----->', zz1);
   // console.groupEnd();
   // const aaa = await f.address().then(it => it.detail())
   // console.log('----->', aaa);

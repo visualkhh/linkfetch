@@ -1,5 +1,5 @@
 import { FetchProxy, FetchProxyKey } from 'FetchProxy';
-import { FieldFetchProxy, FieldFetchProxyKey } from 'FieldFetchProxy';
+import { FieldFetchProxyKey } from 'FieldFetchProxy';
 
 export const PrefixField = '$' as const;
 export type PrefixFieldType = typeof PrefixField;
@@ -13,6 +13,30 @@ export type MetaValueType = typeof MetaValue;
 export const MetaFetch = `${PrefixMetaField}fetch` as const;
 export type MetaFetchType = typeof MetaFetch;
 
+export type FetchObjectPromiseType<T, C> = {
+  // @ts-ignore
+  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never]: (config?: C) => Promise<T[P]>;
+} & {
+  // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
+  // [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
+  [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? T[P] : FetchObjectPromiseType<T[P], C> : T[P];
+};
+
+export type MetaFncValue = {
+  [MetaValue]: <R>(keys: string[] | string) => Promise<R>;
+}
+export type MateFncFetch<T, C> = {
+  [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<R, C>>
+}
+export type MateFncFieldFetch<T, C> = {
+  // eslint-disable-next-line no-use-before-define
+  [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectFieldPromiseType<R, C>>
+}
+export type MetaFnc<T, C> = MetaFncValue & MateFncFetch<T, C>;
+export type FetchObjectFieldPromiseType<T, C> = {
+  [P in keyof T]: T[P] extends object ? T[P] extends any[] ? T[P] : (config?: C) => Promise<FetchObjectFieldPromiseType<T[P], C>> : T[P];
+} & MateFncFieldFetch<T, C>;
+
 export type FetchDoc = { $ref: string };
 export type FetchProviderDoc<T, C> = {
     [ProviderData]: (c: C) => Promise<{ [key in keyof T]: T[key] extends object ? FetchDoc | T[key] : T[key] }>;
@@ -23,28 +47,6 @@ export type FetchProviderDoc<T, C> = {
 export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
 export type FetchValueDocSet<T = any> = { fieldName?: string, fetchName?: string, keys?: string[], value?: T, doc?: FetchDoc };
 
-export const isFetchProxy = (value: any): boolean => {
-  return typeof value === 'object' && FetchProxyKey in value;
-}
-export const isFieldFetchProxy = (value: any): boolean => {
-  return typeof value === 'object' && FieldFetchProxyKey in value;
-}
-export const isFetchDoc = (value: any): value is FetchDoc => {
-  return value && typeof value === 'object' && '$ref' in value;
-}
-export const isFetchMethodName = (name: string | symbol): name is string => {
-  return typeof name === 'string' && !name.startsWith(PrefixMetaField) && name.startsWith(PrefixField) && name.length > PrefixField.length;
-}
-export const findFieldNameByFetchMethodName = (name: string): string => {
-  return name.replace(RegExp(`^\\${PrefixField}`), '');
-}
-export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: FetchConfig): FetchValueDocSet<T> => {
-  const fieldKey = findFieldNameByFetchMethodName(name);
-  const docOrValue = data[fieldKey];
-  const value = isFetchDoc(docOrValue) ? (config?.defaultNull ? null : undefined) : docOrValue;
-  const doc = isFetchDoc(docOrValue) ? docOrValue : undefined;
-  return {fieldName: fieldKey, fetchName: name, value, doc};
-}
 // export type FetchFieldPromiseType<T> =  Promise<T> ;
 // export type FetchObjectPromiseType<T> = {
 //   [P in keyof T]: T[P] extends object ? FetchObjectPromiseType<T[P]>  : FetchFieldPromiseType<T[P]>;
@@ -91,17 +93,7 @@ export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, na
 // export type FetchFieldPromiseType<T, C> = {
 //   [P in keyof T]?: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> extends any[] ? FetchFieldMethodPromiseType<T[P], C> : FetchFieldPromiseType<FetchFieldMethodPromiseType<T[P], C>, C> : FetchFieldMethodPromiseType<T[P], C>;
 // };
-export type FetchObjectFieldPromiseType<T, C> = {
-  [P in keyof T]: T[P] extends object ? T[P] extends any[] ? T[P] : (config?: C) => Promise<FetchObjectFieldPromiseType<T[P], C>> : T[P];
-};
-export type FetchObjectPromiseType<T, C> = {
-  // @ts-ignore
-  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never]: (config?: C) => Promise<T[P]>;
-} & {
-  // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
-  // [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
-  [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? T[P] : FetchObjectPromiseType<T[P], C> : T[P];
-};
+
 export type FetchFieldType<T> = T;
 export type FetchObjectType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
@@ -109,6 +101,29 @@ export type FetchObjectType<T> = {
 
 export type FieldFetchCallBack<C = any> = (doc?: FetchDoc, config?: { config?: C, linkfetchConfig?: FetchConfig }) => Promise<any>;
 export type FetchCallBack<C = any> = (data: FetchValueDocSet, config?: { config?: C, linkfetchConfig?: FetchConfig }) => Promise<any>;
+
+export const isFetchProxy = (value: any): boolean => {
+  return typeof value === 'object' && FetchProxyKey in value;
+}
+export const isFieldFetchProxy = (value: any): boolean => {
+  return typeof value === 'object' && FieldFetchProxyKey in value;
+}
+export const isFetchDoc = (value: any): value is FetchDoc => {
+  return value && typeof value === 'object' && '$ref' in value;
+}
+export const isFetchMethodName = (name: string | symbol): name is string => {
+  return typeof name === 'string' && !name.startsWith(PrefixMetaField) && name.startsWith(PrefixField) && name.length > PrefixField.length;
+}
+export const findFieldNameByFetchMethodName = (name: string): string => {
+  return name.replace(RegExp(`^\\${PrefixField}`), '');
+}
+export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: FetchConfig): FetchValueDocSet<T> => {
+  const fieldKey = findFieldNameByFetchMethodName(name);
+  const docOrValue = data[fieldKey];
+  const value = isFetchDoc(docOrValue) ? (config?.defaultNull ? null : undefined) : docOrValue;
+  const doc = isFetchDoc(docOrValue) ? docOrValue : undefined;
+  return {fieldName: fieldKey, fetchName: name, value, doc};
+}
 export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys: string[] | string, config?: C) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
   keyArray.push(ProviderData);
@@ -116,14 +131,11 @@ export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys
 }
 export const executeFieldFetch = <T, C>(target: any, keys: string | string[], c?: C): Promise<T> | undefined => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-
-  // const chain: Promise<any>[] = [];
   let t = target;
   let promise: Promise<any> | undefined = undefined;
   keyArray.forEach(keyIt => {
     if (promise) {
       promise = promise.then(it => {
-        console.log('!@->', it, keyIt)
         return it[keyIt](c);
       });
     } else {
@@ -146,11 +158,6 @@ export const execute = async (target: any, keys: string[] | string, parameter?: 
   }
   return t as any;
 };
-
-export type MetaFnc<T, C> = {
-  [MetaValue]: (keys: string[] | string) => Promise<any>;
-  [MetaFetch]: (keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<T, C>>
-}
 
 export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
   const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
@@ -222,10 +229,31 @@ export const linkfieldfetch = <T extends object, C = any>(data: FetchObjectType<
           cache = it;
         }
         return it;
+      }).then(it => {
+        const metaFnc: MateFncFieldFetch<T, C> = {
+          // @ts-ignore
+          $$fetch: async (keys: string[] | string, config?: C) => {
+            return executeFieldFetch(it, keys, config);
+          }
+        }
+        return Object.assign(it, metaFnc);
       })
     };
   }
 
   const target = change(data);
+  // const target = change(data).then(it => {
+  //
+  // });
   return target;
+  // const metaFnc: MateFncFieldFetch<T, C> = {
+  //   @ts-ignore
+  // $$fetch: async (keys: string[] | string, config?: C) => {
+  //   return executeFieldFetch(data, keys, config);
+  // }
+  // }
+  //
+  // const assign = Object.assign(target, metaFnc);
+  // console.log('------', assign)
+  // return assign;
 }

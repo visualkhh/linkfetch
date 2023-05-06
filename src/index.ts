@@ -12,14 +12,12 @@ export type RequestFetchType = typeof RequestFetch;
 export const Ref = `${PrefixField}ref` as const;
 export type RefType = typeof Ref;
 
-
 export const MetaFetch = `${MetaPrefixField}fetch` as const;
 export type MetaFetchType = typeof MetaFetch;
 export const MetaRequest = `${MetaPrefixField}request` as const;
 export type MetaRequestType = typeof MetaRequest;
 export const MetaSnapshot = `${MetaPrefixField}snapshot` as const;
 export type MetaSnapshotType = typeof MetaSnapshot;
-
 
 export type GetPath<T, P extends string> =
   P extends `${infer K}.${infer R}`
@@ -50,7 +48,6 @@ type OptionalDeep<T> = {
 export type FetchDoc = { [P in typeof Ref]: string };
 export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
 
-
 export type FetchObjectOrDocType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectOrDocType<T[P]> | FetchDoc : T[P];
 } | FetchDoc;
@@ -73,8 +70,7 @@ export type FetchObject<T, C = any> = {
   [P in keyof T]: T[P] extends object ? T[P] extends any[] ? T[P] : (config?: C) => Promise<FetchObject<T[P], C>> : T[P];
 }
 
-
-///////////////////////////////////////////////
+// /////////////////////////////////////////////
 
 const isFetchDoc = (value: any): value is FetchDoc => {
   return value && typeof value === 'object' && Ref in value;
@@ -95,7 +91,6 @@ const execute = async (target: any, keys: string[] | string = [], parameter?: an
   return t as any;
 };
 
-
 // producer
 const fetchProducer = async <T, C>(target: FetchProducerDoc<T, C>, keys: string[] | string = [], config?: C) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
@@ -110,7 +105,6 @@ export const producer = <T, C>(target: FetchProducerDoc<T, C>, config?: C) => {
     },
     [MetaRequest]: async (request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
       return requestProducer(target, request);
-      return 'a' as any;
     }
   });
   return data;
@@ -153,7 +147,7 @@ export const linkfetch = async <T extends object, C = any>(dataSet: { data: Fetc
   return Object.assign(targetResult, executor);
 }
 
-export const linkfetchLoop = <T extends object, C = any>(dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> }, fetch: Fetcher<C>, config?: { linkfetchConfig?: FetchConfig }): (config?: C) => Promise<FetchObject<T, C>> => {
+const linkfetchLoop = <T extends object, C = any>(dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> }, fetch: Fetcher<C>, config?: { linkfetchConfig?: FetchConfig }): (config?: C) => Promise<FetchObject<T, C>> => {
   const change = (field: any, reqeust?: any) => {
     // console.log('-------reqest', field, reqeust)
     // if (isFetchProxy(field) || isFetchDoc(field)) {
@@ -202,7 +196,6 @@ const linkfetchSnapshot = async <T extends object>(data: FetchObject<T>, config?
         bowl[key] = value;
       }
     }
-    ;
     return bowl;
   }
   const bowl = await change({}, data);

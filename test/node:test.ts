@@ -7,7 +7,7 @@ type Req = {
 }
 
 const doc: FetchObjectOrDocType<User> = {
-  $ref: 'http://localhost:3000/users/1',
+  $ref: 'http://localhost:3000/users/1'
 };
 
 const defaultRequest: FetchRequest<User, Req> = {
@@ -40,12 +40,9 @@ const fetcher: Fetcher<Req> = async (doc, config) => {
   console.log('detail', detail);
   console.log('JSON stringify:', JSON.stringify(await root.$$snapshot({allFetch: true})));
 
-
   console.log('request all fetch------------------');
-  const requestData = await fetch('http://localhost:3000/users', {method: 'post', headers: {'Accept': 'application/json, text/plain, */*', 'Content-Type': 'application/json'}, body: JSON.stringify(defaultRequest)}).then(it => it.json())
+  const requestData = await fetch('http://localhost:3000/users', {method: 'post', headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'}, body: JSON.stringify(defaultRequest)}).then(it => it.json())
   console.log('requestData', requestData);
   const request = await linkfetch<User, Req>({data: requestData, defaultRequest: defaultRequest}, fetcher, {linkfetchConfig: {cached: true}});
   console.log('JSON stringify:', JSON.stringify(await request.$$snapshot({allFetch: true})));
 })();
-
-

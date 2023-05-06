@@ -1,183 +1,86 @@
-import { FetchProxy, FetchProxyKey } from 'FetchProxy';
-import { FieldFetchProxyKey } from 'FieldFetchProxy';
-
 export const PrefixField = '$' as const;
 export type PrefixFieldType = typeof PrefixField;
-export const ProviderData = '$data' as const;
-export type ProviderDataType = typeof ProviderData;
+export const MetaPrefixField = '$$' as const;
+export type MetaPrefixType = typeof MetaPrefixField;
 
-export const PrefixMetaField = '$$' as const;
-export type PrefixMetaFieldType = typeof PrefixMetaField;
-export const MetaValue = `${PrefixMetaField}value` as const;
-export type MetaValueType = typeof MetaValue;
-export const MetaFetch = `${PrefixMetaField}fetch` as const;
+export const ProducerFetch = `${PrefixField}fetch` as const;
+export type ProducerFetchType = typeof ProducerFetch;
+
+export const RequestFetch = `${PrefixField}request` as const;
+export type RequestFetchType = typeof RequestFetch;
+
+export const Ref = `${PrefixField}ref` as const;
+export type RefType = typeof Ref;
+
+
+export const MetaFetch = `${MetaPrefixField}fetch` as const;
 export type MetaFetchType = typeof MetaFetch;
+export const MetaRequest = `${MetaPrefixField}request` as const;
+export type MetaRequestType = typeof MetaRequest;
+export const MetaSnapshot = `${MetaPrefixField}snapshot` as const;
+export type MetaSnapshotType = typeof MetaSnapshot;
+
 
 export type GetPath<T, P extends string> =
   P extends `${infer K}.${infer R}`
     ?
-      K extends keyof T ? GetPath<T[K], R> : never
+    K extends keyof T ? GetPath<T[K], R> : never
     :
     P extends keyof T ? T[P] : (P extends string ? T : never);
 
-export type DiveIntoObject<Obj, Keys extends unknown[]> =
-  Keys['length'] extends 0
-    ? Obj
-    : Keys extends [
-      infer FirstKey extends keyof Obj, ...infer Rest
-    ]
-    ? DiveIntoObject<Obj[FirstKey], Rest>
-      :never;
-// const a = {
-//   name: 'st',
-//   addr: {
-//     good: 'good'
-//   }
-// } as const
-// type A = typeof a;
-// // type B = GetPath<A, 'addr.good'>;
-// const zz = '333' as const;
-// type B = GetPath<A, 'addr.good'>;
-// const b: B = {good: 'good'};
-// type C = DiveIntoObject<A, []>;
-// const is: C = {name: 'st', addr: {good: 'good'}}
-// // const is: C = 'good'
-// console.log(is, b)
+export type FlatKey<T> = {
+  [P in keyof T as T[P] extends object
+    ?
+    // @ts-ignore
+    `${P}.${keyof FlatKey<T[P]>}` | `${P}`
+    :
+    // @ts-ignore
+    `${P}`]: unknown;
+}
 
-// export type GetPath
-export type FetchObjectPromiseType<T, C> = {
+export type FlatObjectKey<T> = {
   // @ts-ignore
-  [P in keyof T as T[P] extends object ? `${PrefixFieldType}${P}` : never]: (config?: C) => Promise<T[P]>;
-} & {
-  // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P], C> : T[P] | undefined;
-  // [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? Optional<T[P]> : FetchObjectPromiseType<T[P], C> : Optional<T[P]>;
-  [P in keyof T]?: T[P] extends object ? T[P] extends any[] ? T[P] : FetchObjectPromiseType<T[P], C> : T[P];
-};
+  [P in keyof FlatKey<T> as GetPath<T, P> extends object ? P : never]: GetPath<T, P>;
+}
 
-export type MetaFncValue = {
-  [MetaValue]: <R>(keys: string[] | string) => Promise<R>;
+type OptionalDeep<T> = {
+  [P in keyof T]?: T[P] extends object ? OptionalDeep<T[P]> : T[P];
 }
-export type MateFncFetch<T, C> = {
-  [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectPromiseType<R, C>>
-}
-export type MateFncFieldFetch<T, C> = {
-  // eslint-disable-next-line no-use-before-define
-  [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectFieldPromiseType<R, C>>
-  // [MetaFetch]: <R = T>(keys: string[] | string, config?: C) => Promise<FetchObjectFieldPromiseType<R, C>>
-}
-export type MetaFnc<T, C> = MetaFncValue & MateFncFetch<T, C>;
-export type FetchObjectFieldPromiseType<T, C> = {
-  [P in keyof T]: T[P] extends object ? T[P] extends any[] ? T[P] : (config?: C) => Promise<FetchObjectFieldPromiseType<T[P], C>> : T[P];
-} & MateFncFieldFetch<T, C>;
 
-export type FetchDoc = { $ref: string };
-export type FetchProviderDoc<T, C> = {
-    [ProviderData]: (c: C) => Promise<{ [key in keyof T]: T[key] extends object ? FetchDoc | T[key] : T[key] }>;
+export type FetchDoc = { [P in typeof Ref]: string };
+export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
+
+
+export type FetchObjectOrDocType<T> = {
+  [P in keyof T]: T[P] extends object ? FetchObjectOrDocType<T[P]> | FetchDoc : T[P];
+} | FetchDoc;
+export type Fetcher<C = any> = (doc?: FetchDoc, config?: { req?: C, value?: any, linkfetchConfig?: FetchConfig }) => Promise<any>;
+export type FetchProducerDoc<T, C> = {
+    [P in typeof ProducerFetch]: (c: C) => Promise<{ [key in keyof T]: T[key] extends object ? FetchDoc | T[key] : T[key] }>;
   }
   & {
-  [P in keyof T as T[P] extends object ? P : never]?: FetchProviderDoc<T[P], C>;
+  [P in keyof T as T[P] extends object ? P : never]?: FetchProducerDoc<T[P], C>;
 }
-export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
-export type FetchValueDocSet<T = any> = { fieldName?: string, fetchName?: string, keys?: string[], value?: T, doc?: FetchDoc };
 
-// export type FetchFieldPromiseType<T> =  Promise<T> ;
-// export type FetchObjectPromiseType<T> = {
-//   [P in keyof T]: T[P] extends object ? FetchObjectPromiseType<T[P]>  : FetchFieldPromiseType<T[P]>;
-// }
-// type Capitalize<T> = T extends `${infer F}${infer R}` ? `${Uppercase<F>}${R}` : T;
-// export type FetchObjectPromiseObjectType<T> = {
-//   [P in keyof T as `$${P}`]: T[P] extends object ? FetchObjectPromiseObjectType<T[P]>  : FetchFieldPromiseType<T[P]>;
-// }
-// [P in keyof T as `$${P}`]: FetchFieldPromiseType<T[P]>;
+export type FetchRequest<T, C> = {
+    [P in typeof RequestFetch]: C;
+  }
+  & {
+  [P in keyof T as T[P] extends object ? P : never]?: FetchRequest<T[P], C>;
+}
 
-// export type FetchObjectPromiseType<T> = OptionalDeep<T> ;
-// {
-//   // [P in keyof T as `${PrefixType}${P}`]: T[P] extends object ? FetchFieldPromiseType<T[P]> : never;
-// } & {
-//   // [P in keyof T]?: T[P] extends object ? FetchObjectPromiseType<T[P]>  : T[P];
-// } & OptionalDeep<T> ;
+export type FetchObject<T, C = any> = {
+  [P in keyof T]: T[P] extends object ? T[P] extends any[] ? T[P] : (config?: C) => Promise<FetchObject<T[P], C>> : T[P];
+}
 
-// type OptionalDeep<T> = {
-//   [P in keyof T]?: T[P] extends object ? OptionalDeep<T[P]> : T[P];
-// }
-// type OptionalObject<T> = {
-//   [P in keyof T]?: T[P];
-// }
-// type Optional<T> = T | undefined;
-// type Capitalize<T> = T extends `${infer F}${infer R}` ? `${Uppercase<F>}${R}` : T;
-// export type FetchFieldPromiseType<T, C> =  (config?: C) => Promise<T> ;
-// export type FetchObjectPromiseObjectType<T> = {
-//   [P in keyof T as `$${P}`]: T[P] extends object ? FetchObjectPromiseObjectType<T[P]>  : FetchFieldPromiseType<T[P]>;
-// }
-// [P in keyof T as `$${P}`]: FetchFieldPromiseType<T[P]>;
-// export type FetchObjectPromiseType<T, C> = {
-//   [P in keyof T as `${PrefixType}${P}`]-?: T[P] extends object ? FetchFieldPromiseType<T[P], C> : never;
-// } & {
-//   [P in keyof T]?: T[P] extends object ? OptionalDeep<FetchObjectPromiseType<T[P], C>> : T[P];
-// };
-// type OnlyNever<T> = {
-//   [P in keyof T as T[P] extends never ? P : never]: T[P];
-// }
-// type aa = NonNullable<FetchObjectPromiseType<any, any>>;
-// type ExcludeNever<T> = {
-//   [P in keyof T as T[P] extends never ? never : P]: T[P];
-// }
-// export type FetchFieldMethodPromiseType<T, C> = Promise<T | C>;
-// export type FetchFieldPromiseType<T, C> = {
-//   [P in keyof T]?: T[P] extends object ? FetchFieldMethodPromiseType<T[P], C> extends any[] ? FetchFieldMethodPromiseType<T[P], C> : FetchFieldPromiseType<FetchFieldMethodPromiseType<T[P], C>, C> : FetchFieldMethodPromiseType<T[P], C>;
-// };
 
-export type FetchFieldType<T> = T;
-export type FetchObjectType<T> = {
-  [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
-} | FetchDoc;
+///////////////////////////////////////////////
 
-export type FieldFetchCallBack<C = any> = (doc?: FetchDoc, config?: { config?: C, linkfetchConfig?: FetchConfig }) => Promise<any>;
-export type FetchCallBack<C = any> = (data: FetchValueDocSet, config?: { config?: C, linkfetchConfig?: FetchConfig }) => Promise<any>;
+const isFetchDoc = (value: any): value is FetchDoc => {
+  return value && typeof value === 'object' && Ref in value;
+}
 
-export const isFetchProxy = (value: any): boolean => {
-  return typeof value === 'object' && FetchProxyKey in value;
-}
-export const isFieldFetchProxy = (value: any): boolean => {
-  return typeof value === 'object' && FieldFetchProxyKey in value;
-}
-export const isFetchDoc = (value: any): value is FetchDoc => {
-  return value && typeof value === 'object' && '$ref' in value;
-}
-export const isFetchMethodName = (name: string | symbol): name is string => {
-  return typeof name === 'string' && !name.startsWith(PrefixMetaField) && name.startsWith(PrefixField) && name.length > PrefixField.length;
-}
-export const findFieldNameByFetchMethodName = (name: string): string => {
-  return name.replace(RegExp(`^\\${PrefixField}`), '');
-}
-export const findFieldSetByFetchMethodName = <T extends any = any>(data: any, name: string, config?: FetchConfig): FetchValueDocSet<T> => {
-  const fieldKey = findFieldNameByFetchMethodName(name);
-  const docOrValue = data[fieldKey];
-  const value = isFetchDoc(docOrValue) ? (config?.defaultNull ? null : undefined) : docOrValue;
-  const doc = isFetchDoc(docOrValue) ? docOrValue : undefined;
-  return {fieldName: fieldKey, fetchName: name, value, doc};
-}
-export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys: string[] | string, config?: C) => {
-  const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-  keyArray.push(ProviderData);
-  return await execute(target, keyArray, [config]);
-}
-export const executeFieldFetch = <T, C>(target: any, keys: string | string[], c?: C): Promise<T> | undefined => {
-  const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-  let t = target;
-  let promise: Promise<any> | undefined = undefined;
-  keyArray.forEach(keyIt => {
-    if (promise) {
-      promise = promise.then(it => {
-        return it[keyIt](c);
-      });
-    } else {
-      promise = (t as any)[keyIt](c);
-    }
-  })
-  return promise;
-}
-export const execute = async (target: any, keys: string[] | string, parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {
+const execute = async (target: any, keys: string[] | string = [], parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {
   let t = target;
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
   for (const key of keyArray) {
@@ -192,101 +95,116 @@ export const execute = async (target: any, keys: string[] | string, parameter?: 
   return t as any;
 };
 
-export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> => {
-  const doc = Array.isArray(docObject) ? [...docObject] : Object.assign({}, docObject) as any;
-  const proxy = (field: any, keys: string[] = []) => {
-    if (isFetchProxy(field) || isFetchDoc(field)) {
-      return field;
-    }
 
-    Object.entries(field).filter(([key, value]) => typeof value === 'object' && !Array.isArray(value)).forEach(([key, value]) => {
-      if (!isFetchProxy(value)) {
-        const subKeys = [...keys, key];
-        field[key] = proxy(value, subKeys);
-      }
-    });
-
-    const inKeys = [...(config?.keys ?? [])];
-    inKeys.push(...keys);
-    return new Proxy(field, new FetchProxy<T, C>(field, fetch, inKeys, config?.linkfetchConfig));
-  }
-
-  if (isFetchDoc(doc)) {
-    const set: FetchValueDocSet = {fieldName: undefined, fetchName: undefined, value: undefined, doc};
-    const returnData = await fetch(set, config);
-    const proxy = linkfetch(returnData, fetch, config);
-    return proxy as any;
-  }
-
-  const target = proxy(doc);
-  const metaFnc: MetaFnc<T, C> = {
-    $$value: async (keys: string[] | string) => {
-      return await execute(target, keys);
-    },
-    $$fetch: async (keys: string[] | string, config?: C) => {
-      const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-      if (keyArray.length > 0) {
-        const name = keyArray[keyArray.length - 1];
-        keyArray[keyArray.length - 1] = `${PrefixField}${name}`;
-      }
-      return await execute(target, keyArray, [config], async (target: any, prev: any, value: any, name: string) => {
-        if (value === undefined || value === null) {
-          const data = await prev[`${PrefixField}${name}`](config);
-          return data;
-        } else {
-          return value;
-        }
-      });
-    }
-  }
-  return Object.assign(target, metaFnc);
+// producer
+const fetchProducer = async <T, C>(target: FetchProducerDoc<T, C>, keys: string[] | string = [], config?: C) => {
+  const keyArray = Array.isArray(keys) ? keys : keys.split('.');
+  keyArray.push(ProducerFetch);
+  return await execute(target, keyArray, [config]);
 }
 
-export const linkfieldfetch = <T extends object, C = any>(data: FetchObjectType<T>, fetch: FieldFetchCallBack<C>, config?: { linkfetchConfig?: FetchConfig }): (config?: C) => Promise<FetchObjectFieldPromiseType<T, C>> => {
-  const change = (field: any) => {
+export const producer = <T, C>(target: FetchProducerDoc<T, C>, config?: C) => {
+  const data = Object.assign(target, {
+    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: { key?: P, req?: C }) => {
+      return await fetchProducer(target, config?.key as any, config?.req);
+    },
+    [MetaRequest]: async (request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
+      return requestProducer(target, request);
+      return 'a' as any;
+    }
+  });
+  return data;
+}
+
+const requestProducer = async <T extends object, C>(data: FetchProducerDoc<T, C>, request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
+  const change = async (bowl: any, field: any, request: any) => {
+    for (const [key, value] of Array.from(Object.entries(request))) {
+      if (key === RequestFetch) {
+        Object.assign(bowl, await field?.[ProducerFetch]?.(value));
+
+      } else if (typeof value === 'object') {
+        bowl[key] = await change({}, field[key], request[key])
+      }
+    }
+    ;
+    return bowl;
+  }
+  const bowl = await change({}, data, request);
+  return bowl as T;
+}
+
+// linkfetch
+export const linkfetch = async <T extends object, C = any>(dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> }, fetch: Fetcher<C>, config?: { req?: C, linkfetchConfig?: FetchConfig }) => {
+  const newData = Array.isArray(dataSet.data) ? [...dataSet.data] : Object.assign({}, dataSet.data);
+  const targetResult = await linkfetchLoop({data: newData as FetchObjectOrDocType<T>, defaultRequest: dataSet.defaultRequest}, fetch, config)(config?.req ?? dataSet.defaultRequest?.$request);
+
+  const executor = {
+    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: { key?: P, req?: C }) => {
+      return await execute(targetResult, config?.key as any, [config?.req],
+        async (target, prev, value, name) => {
+          return await value(config?.req);
+        }
+      ) as FlatObjectKey<T>[P];
+    },
+    [MetaSnapshot]: async (config?: { allFetch?: boolean }): Promise<OptionalDeep<T>> => {
+      return linkfetchSnapshot<T>(targetResult, config);
+    }
+  }
+  return Object.assign(targetResult, executor);
+}
+
+export const linkfetchLoop = <T extends object, C = any>(dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> }, fetch: Fetcher<C>, config?: { linkfetchConfig?: FetchConfig }): (config?: C) => Promise<FetchObject<T, C>> => {
+  const change = (field: any, reqeust?: any) => {
+    // console.log('-------reqest', field, reqeust)
     // if (isFetchProxy(field) || isFetchDoc(field)) {
     //   return field;
     // }
-    Object.entries(field).filter(([key, value]) => typeof value === 'object' && !isFetchDoc(data) && !Array.isArray(value)).forEach(([key, value]) => {
-      field[key] = change(value);
+    Object.entries(field).filter(([key, value]) => typeof value === 'object' && !isFetchDoc(dataSet.data) && !Array.isArray(value)).forEach(([key, value]) => {
+      // console.log('key-->', key);
+      // console.log('key', key, field, reqeust, reqeust?.[key]);
+      field[key] = change(value, reqeust?.[key]);
     });
-    const doc = isFetchDoc(field) ? field : undefined;
-    let cache: any = undefined;
-    return (c?: C) => {
-      if (config?.linkfetchConfig?.cached && cache) {
-        return Promise.resolve(cache);
-      }
-      return fetch(doc, {config: c, linkfetchConfig: config?.linkfetchConfig}).then(it => {
-        linkfieldfetch(it, fetch, config)
-        if (config?.linkfetchConfig?.cached) {
-          cache = it;
-        }
-        return it;
-      }).then(it => {
-        const metaFnc: MateFncFieldFetch<T, C> = {
-          // @ts-ignore
-          $$fetch: async <R = any>(keys: string[] | string, config?: C) => {
-            return executeFieldFetch<R, C>(it, keys, config);
-          }
-        }
-        return Object.assign(it, metaFnc);
-      })
-    };
-  }
 
-  const target = change(data);
-  // const target = change(data).then(it => {
-  //
-  // });
+    // console.log('field!!!!!', field);
+    const doc = isFetchDoc(field) ? field : undefined;
+    // console.log('isFetchDoc--?', doc)
+    const p = Object.assign(
+      (c: C = reqeust?.[RequestFetch]) => {
+        if (config?.linkfetchConfig?.cached && p.$$linkfetch_cache) {
+          return Promise.resolve(p.$$linkfetch_cache);
+        }
+        return fetch(doc, {req: c, value: field, linkfetchConfig: config?.linkfetchConfig}).then(it => {
+          linkfetchLoop({data: it, defaultRequest: reqeust}, fetch, config)
+          p.$$linkfetch_cache = it;
+          p.$$linkfetch_age++;
+          return it;
+        });
+      },
+      {$$linkfetch_cache: undefined, $$linkfetch_age: 0});
+    return p;
+  }
+  const target = change(dataSet.data, dataSet?.defaultRequest);
   return target;
-  // const metaFnc: MateFncFieldFetch<T, C> = {
-  //   @ts-ignore
-  // $$fetch: async (keys: string[] | string, config?: C) => {
-  //   return executeFieldFetch(data, keys, config);
-  // }
-  // }
-  //
-  // const assign = Object.assign(target, metaFnc);
-  // console.log('------', assign)
-  // return assign;
+}
+
+const linkfetchSnapshot = async <T extends object>(data: FetchObject<T>, config?: { allFetch?: boolean }): Promise<OptionalDeep<T>> => {
+  const change = async (bowl: any, field: any) => {
+    if (!field) {
+      return bowl;
+    }
+    for (const [key, value] of Array.from(Object.entries(field))) {
+      if (typeof value === 'function' && '$$linkfetch_cache' in value && '$$linkfetch_age' in value) {
+        if (config?.allFetch && !value.$$linkfetch_age) {
+          await value();
+        }
+        bowl[key] = await change({}, value.$$linkfetch_cache);
+      } else if (typeof value !== 'function') {
+        bowl[key] = value;
+      }
+    }
+    ;
+    return bowl;
+  }
+  const bowl = await change({}, data);
+  return bowl as T;
 }

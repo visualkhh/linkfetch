@@ -4,10 +4,9 @@ linked lazy fetch!
 [![typescript](https://img.shields.io/badge/-npm-black?logo=npm)](https://www.npmjs.com/package/linkfetch) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE.md)
 
 * Supports Lazy fetch with field access.
-* You can fetch by accessing the $fieldName.  (prefix: '$')
-    * ex) fetchObject.$fieldName()  ← Promise Object
-* value is automatically assigned to the field variable after fetch.
-    * ex) fetchObject.fieldName
+* Provides cache.
+* You can share types such as server and client. Significantly reduces bugs.
+* You can also patch it all at once.
 
 # 🚀 Quick start  install
 
@@ -17,8 +16,9 @@ npm install linkfetch
 
 # ⚒️ example
 - [![express](https://img.shields.io/badge/-server-black?logo=express)](./test/server:test.ts)
-- [![typescript](https://img.shields.io/badge/-node-black?logo=typescript)](./test/node:test.ts)
-- [![javascript](https://img.shields.io/badge/-web-black?logo=javascript)](./test/web:test.html)
+- [![typescript](https://img.shields.io/badge/-client-black?logo=typescript)](./test/node:test.ts)
+
+[//]: # (- [![javascript]&#40;https://img.shields.io/badge/-web-black?logo=javascript&#41;]&#40;./test/web:test.html&#41;)
 
 
 ## linkfetch document protocol
@@ -40,37 +40,9 @@ ex)
 }
 ```
 
-# remote fetch
-
+# client node
 ```typescript
-import { FetchObjectType, linkfetch } from 'linkfetch';
-
-type Data = {
-  name: string;
-  product1: { id: number, title: string, description: string };
-}
-
-const data: FetchObjectType<Data> = {
-  name: 'my name is dom-render',
-  product1: {$ref: 'https://dummyjson.com/products/1'}
-}
-
-const fetchObject = await linkfetch<Data, Config>(data, (data, config) => fetch(data.doc!.$ref, {method: 'GET'}).then(it => it.json()));
-
-const product1 = await fetchObject.$product1();  // lazy fetch
-
-console.log(product1); // or console.log(fetchObject.product1)
-JSON.stringify(fetchObject) // {...}
-```
-
-
-# remote fieldfetch
-
-```typescript
-import {
-  executeFieldFetch, FetchObjectType, linkfetch, linkfieldfetch,
-} from 'linkfetch';
-type User = {
+export type User = {
   name: string;
   id: string;
   address: {
@@ -81,220 +53,138 @@ type User = {
     zip: string;
   }
 }
-type UserConfig = {
+```
+
+```typescript
+import { User } from './types/User';
+import { Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch } from 'linkfetch';
+
+type Req = {
   id: string;
+  queryId: string;
 }
-const createUserDoc = (id: string): FetchObjectType<User> => {
-  return {
-    $ref: `http://localhost:3000/users/${id}`
+
+const doc: FetchObjectOrDocType<User> = {
+  $ref: 'http://localhost:3000/users/1',
+};
+
+const defaultRequest: FetchRequest<User, Req> = {
+  $request: {id: '1', queryId: 'q1'},
+  address: {
+    $request: {id: '2', queryId: 'q2'},
+    detail: {
+      $request: {id: '3', queryId: 'q3'}
+    }
+  }
+}
+
+const fetcher: Fetcher<Req> = async (doc, config) => {
+  if (doc) {
+    const url = new URL(doc.$ref);
+    url.searchParams.set('queryId', config?.req?.queryId ?? 'none');
+    const responsePromise = fetch(url, {method: 'GET'});
+    return responsePromise.then(it => it.json());
+  } else {
+    return Promise.resolve(config?.value);
   }
 }
 
 (async () => {
-  const data = createUserDoc('1');
-  const fetchObject = await linkfieldfetch<User, UserConfig>(data, (data, config) => {
-    if (data) {
-      const responsePromise = fetch(data.$ref, {method: 'GET'});
-      return responsePromise.then(it => it.json());
-    } else {
-      return Promise.resolve(undefined);
-    }
-  })();
-  const adress = await fetchObjectf.address();  // address(config..);
-  const detail = await adress.detail(); 
-  // or  await executeFieldFetch(fetchObject, 'address.detail');
+  console.log('lazy fetch------------------');
+  const root = await linkfetch<User, Req>({data: doc, defaultRequest: defaultRequest}, fetcher, {linkfetchConfig: {cached: true}});
+  const address = await root.address();
+  const detail = await root.$$fetch({key: 'address.detail', req: {id: '1', queryId: 'zzzzz'}});
+  console.log('address', address);
+  console.log('detail', detail);
+  console.log('JSON stringify:', JSON.stringify(await root.$$snapshot({allFetch: true})));
+
+
+  console.log('request all fetch------------------');
+  const requestData = await fetch('http://localhost:3000/users', {method: 'post', headers: {'Accept': 'application/json, text/plain, */*', 'Content-Type': 'application/json'}, body: JSON.stringify(defaultRequest)}).then(it => it.json())
+  console.log('requestData', requestData);
+  const request = await linkfetch<User, Req>({data: requestData, defaultRequest: defaultRequest}, fetcher, {linkfetchConfig: {cached: true}});
+  console.log('JSON stringify:', JSON.stringify(await request.$$snapshot({allFetch: true})));
 })();
+
 ```
 
 
-
-# local fetch
-
+# server producer  
 ```typescript
-import { FetchObjectType, linkfetch } from 'linkfetch';
+import express, { Express } from 'express';
+import cors from 'cors';
+import { FetchProducerDoc, producer, FlatObjectKey } from 'linkfetch';
+import { User } from './types/User';
 
-type Data = {
-  name: string;
-  product: {
-    products: { title: string, category: string }[];
-    total: number;
-    skip: number;
-    limit: number
-  };
-}
-const data: FetchObjectType<Data> = {
-  name: 'my name is dom-render',
-  product: {
-    $ref: 'local',
-  }
+const corsOptions = {
+  origin: '*',
+  credentials: true,
+  optionSuccessStatus: 200,
 }
 
-const fetchObject = await linkfetch<Data, Config>(data, (data, config) => {
-  if (data.fieldName === 'product') {
-    return Promise.resolve({total: 1, skip: 0, limit: 1});
-  }
-  if (data.fieldName === 'products') {
-    return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
-  }
-  return Promise.resolve(undefined);
-});
-
-const product = await fetchObject.$product();  // lazy fetch
-const products = await fetchObject.product.$products() // lazy fetch
-
-console.log(product, products); // or console.log(fetchObject.product, fetchObject.product.products)
-JSON.stringify(fetchObject) // {...}
-```
-
-## first fetch
-
-```typescript
-type Data = {
-  name: string;
-  wow: { name: string },
-  product: {
-    products: { title: string, category: string }[];
-    total: number;
-    skip: number;
-    limit: number
-  };
-}
-const data: FetchObjectType<Data> = {
-  $ref: 'local'
-}
-const fetchObject = await linkfetch<Data, Config>(data, (data, config) => {
-  console.log('data', data, config);
-  if (!data.fieldName) {
-    return Promise.resolve({name: 'my name is dom-render', wow: {name: 'wow'}});
-  }
-  if (data.value) {
-    return Promise.resolve(data.value);
-  }
-  if (data.fieldName === 'product') {
-    return Promise.resolve({total: 1, skip: 0, limit: 1});
-  }
-  if (data.fieldName === 'products') {
-    return Promise.resolve([{title: 'titletitle', category: 'categorycategory'}]);
-  }
-  return Promise.resolve(undefined);
-});
-
-console.log('first', fetchObject);
-const product = await fetchObject.$product();
-console.log(product);
-const products = await fetchObject.product!.$products()
-console.log(products, fetchObject.product!.products);
-console.log(JSON.stringify(fetchObject));
-```
-
-# data provider
-```typescript
-import { executeProvider, FetchProviderDoc } from 'linkfetch';
-
-type User = {
-  name: string;
-  id: string;
-  address: {
-    detail: {
-      first: string;
-      last: string;
-    };
-    zip: string;
-  }
-}
-
-type Config = { id: string };
-const root: FetchProviderDoc<User, Config> = {
-  $data: async (config) => {
+type Reg = { id: string, queryId?: string};
+const doc: FetchProducerDoc<User, Reg> = {
+  $fetch: async (req) => {
     return {
       name: 'linkfetch',
-      id: config.id,
+      id: req.id + `(queryId:${req.queryId})`,
       address: {
-        $ref: `http://localhost:3000/users/${config.id}/address`
+        $ref: `http://localhost:3000/users/${req.id}/address`
       }
     }
   },
   address: {
-    $data: async (config) => {
+    $fetch: async (req) => {
       return {
-        zip: '6484',
+        zip: '6484' + `(queryId:${req.queryId})`,
         detail: {
           // first: 'first',
           // last: 'last',
-          $ref: `http://localhost:3000/users/${config.id}/address/detail`
+          $ref: `http://localhost:3000/users/${req.id}/address/detail`
         }
       }
     },
     detail: {
-      $data: async (config) => {
+      $fetch: async (req) => {
         return {
-          first: `first-88 ${config.id}`,
-          last: `last-64-${config.id}`
+          first: `first-88 ${req.id}` + `(queryId:${req.queryId})`,
+          last: `last-64-${req.id}` + `(queryId:${req.queryId})`
         }
       }
     }
   }
 }
 
-const rootData = await executeProvider<User, Config>(root, [], {id: req.params.id});
-res.json(rootData);
+const root = producer(doc);
+const app: Express = express();
+app.use(cors(corsOptions)) // Use this after the variable declaration
+app.use(express.json());
 
-const addressData = await executeProvider<User, Config>(root, ['address'], {id: req.params.id});
-res.json(addressData);
-```
+app.get('/', (req, res) => {
+  res.send('Hello World! linkfetch server');
+});
 
-# field path access
-```typescript
-const products = await fetchObject.$$value('product.products');
-```
+app.post('/users', async (req, res) => {
+  const data = await root.$$request(req.body);
+  console.log('user--!! server, body post');
+  res.json(data);
+});
 
-# field path fetch
-```typescript
-const products = await fetchObject.$$fetch('product.products');
-```
+app.get('/users/:id', async (req, res) => {
+  console.log('request path', req.path, req.params.id);
+  const data = await root.$$fetch({req: {id: req.params.id, queryId: req.query.queryId as string}});
+  res.json(data);
+});
 
-# api doc
+app.get('/users/:id/*', async (req, res) => {
+  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKey<User>;
+  console.log('request path', paths, req.params.id);
+  const data = await root.$$fetch({key: paths , req: {id: req.params.id, queryId: req.query.queryId as string}})
+  res.json(data);
+});
 
-- linkfetch
-    - parameter
-        - data: FetchObjectType
-        - fetch: FetchCallBack
-        - options: linkfetchConfig
+app.listen(3000, () => {
+  console.log('Server started at port 3000');
+});
 
-```typescript
-export const PrefixField = '$' as const;
-export type PrefixFieldType = typeof PrefixField;
-export const ProviderData = '$data' as const;
-export type ProviderDataType = typeof ProviderData;
-
-export const PrefixMetaField = '$$' as const;
-export type PrefixMetaFieldType = typeof PrefixMetaField;
-export const MetaValue = `${PrefixMetaField}value` as const;
-export type MetaValueType = typeof MetaValue;
-export const MetaFetch = `${PrefixMetaField}fetch` as const;
-export type MetaFetchType = typeof MetaFetch;
-
-export const linkfetch = async <T extends object, C = any>(docObject: FetchObjectType<T>, fetch: FetchCallBack<C>, config?: { config?: C, linkfetchConfig?: FetchConfig, keys?: string[] }): Promise<FetchObjectPromiseType<T, C> & MetaFnc<T, C>> {/*...*/};
-export const executeProvider = async <T, C>(target: FetchProviderDoc<T, C>, keys: string[] | string, config?: C) => {/*...*/}
-export const execute = async (target: any, keys: string[] | string, parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {/*...*/}
-
-export type FetchFieldType<T> = T;
-export type FetchObjectType<T> = {
-  [P in keyof T]: T[P] extends object ? FetchObjectType<T[P]> | FetchDoc : FetchFieldType<T[P]>;
-}
-type FetchCallBack<C = any> = (data: ValueDocSet, config: C) => Promise<any>;
-type FetchValueDocSet<T = any> = { fieldName: string, fetchName: string, value?: T, doc?: FetchDoc, keys: string[] };
-// keys: ex) ['product', 'products'] field depth path ← obj.product.products
-type FetchConfig = {
-  defaultNull?: boolean; // unfetch default value is null 
-  cached?: boolean; // cached
-  disableSync?: boolean; // default false 
-}
-export type FetchDoc = { $ref: string };
-export type FetchProviderDoc<T, C> = {
-    [ProviderData]: (c: C) => Promise<{[key in keyof T]: T[key] extends object ? FetchDoc | T[key]  : T[key]}>;
-  }
-  & {
-  [P in keyof T as T[P] extends object ? P : never]?: FetchProviderDoc<T[P], C>;
-}
 ```

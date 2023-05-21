@@ -7,13 +7,15 @@ type Req = {
 }
 
 const doc: FetchObjectOrDocType<User> = {
-  $ref: 'http://localhost:3000/users/1'
+  $ref: 'http://localhost:3000/users/1',
+  $config: {address: {}}
 };
 
 const defaultRequest: FetchRequest<User, Req> = {
   $request: {id: '1', queryId: 'q1'},
   address: {
     $request: {id: '2', queryId: 'q2'},
+    $config: {detail: {}},
     detail: {
       $request: {id: '3', queryId: 'q3'}
     }

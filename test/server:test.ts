@@ -6,36 +6,36 @@ import { User } from './types/User';
 const corsOptions = {
   origin: '*',
   credentials: true,
-  optionSuccessStatus: 200,
+  optionSuccessStatus: 200
 }
 
-type Reg = { id: string, queryId?: string};
+type Reg = { id: string, queryId?: string };
 const doc: FetchProducerDoc<User, Reg> = {
-  $fetch: async (req) => {
+  $fetch: async (r) => {
     return {
       name: 'linkfetch',
-      id: req.id + `(queryId:${req.queryId})`,
+      id: r.request?.id + `(queryId:${r.request?.queryId})`,
       address: {
-        $ref: `http://localhost:3000/users/${req.id}/address`
+        $ref: `http://localhost:3000/users/${r.request?.id}/address`
       }
     }
   },
   address: {
-    $fetch: async (req) => {
+    $fetch: async (r) => {
       return {
-        zip: '6484' + `(queryId:${req.queryId})`,
+        zip: '6484' + `(queryId:${r.request?.queryId})`,
         detail: {
           // first: 'first',
           // last: 'last',
-          $ref: `http://localhost:3000/users/${req.id}/address/detail`
+          $ref: `http://localhost:3000/users/${r.request?.id}/address/detail`
         }
       }
     },
     detail: {
-      $fetch: async (req) => {
+      $fetch: async (r) => {
         return {
-          first: `first-88 ${req.id}` + `(queryId:${req.queryId})`,
-          last: `last-64-${req.id}` + `(queryId:${req.queryId})`
+          first: `first-88 ${r.request?.id}` + `(queryId:${r.request?.queryId})`,
+          last: `last-64-${r.request?.id}` + `(queryId:${r.request?.queryId})`
         }
       }
     }
@@ -59,14 +59,19 @@ app.post('/users', async (req, res) => {
 
 app.get('/users/:id', async (req, res) => {
   console.log('request path', req.path, req.params.id);
-  const data = await root.$$fetch({req: {id: req.params.id, queryId: req.query.queryId as string}});
+  const data = await root.$$fetch({request: {id: req.params.id, queryId: req.query.queryId as string}});
   res.json(data);
 });
 
 app.get('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKey<User>;
   console.log('request path', paths, req.params.id);
-  const data = await root.$$fetch({key: paths , req: {id: req.params.id, queryId: req.query.queryId as string}})
+  const config = {wow: {want: true}};
+  const data = await root.$$fetch({
+    key: paths,
+    request: {id: req.params.id, queryId: req.query.queryId as string},
+    config: config
+  })
   res.json(data);
 });
 

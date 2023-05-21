@@ -34,8 +34,8 @@ ex)
 ```json
 {
   "name": "my name is linkfetch",
-  "product1": {
-    "$ref": "https://dummyjson.com/products/1"
+  "address": {
+    "$ref": "https://localhost/user/1/address"
   }
 }
 ```

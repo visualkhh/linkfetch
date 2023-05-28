@@ -190,7 +190,7 @@ const linkfetchLoop = <T extends object, C = any>(
     const doc = isFetchDoc(field) ? {...field} : undefined;
     // defaultConfig $config Setting 해준다
     if (doc && defaultReqeust?.[Config]) {
-      doc[Config] = defaultReqeust?.[Config];
+      doc[Config] = doc[Config] ?? defaultReqeust?.[Config];
     }
     const p = Object.assign(
       (r?: { request?: C, config?: ObjectConfig<any> }) => {

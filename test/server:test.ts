@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FetchProducerDoc, producer, FlatObjectKey } from 'linkfetch';
+import { FetchProducerDoc, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType, ProducerFetch } from 'linkfetch';
 import { User } from './types/User';
 
 const corsOptions = {
@@ -11,24 +11,25 @@ const corsOptions = {
 
 type Reg = { id: string, queryId?: string };
 const doc: FetchProducerDoc<User, Reg> = {
-  $fetch: async (r, ) => {
-    console.log('----------', r);
+  $fetch: async (r,) => {
+    console.log('-root---------', r);
     return {
       name: 'linkfetch',
       id: r.request?.id + `(queryId:${r.request?.queryId})`,
       address: {
-        $ref: `http://localhost:3000/users/${r.request?.id}/address`
+        $ref: `http://localhost:3000/users/${r.request?.id}/address`,
+        $config: {
+          zip: {is: true},
+        }
       }
-    }
+    };
   },
   address: {
     $fetch: async (r) => {
-        console.log('-address---------', r);
+      console.log('-address---------', r);
       return {
         zip: '6484' + `(queryId:${r.request?.queryId})`,
         detail: {
-          // first: 'first',
-          // last: 'last',
           $ref: `http://localhost:3000/users/${r.request?.id}/address/detail`
         }
       }
@@ -45,7 +46,11 @@ const doc: FetchProducerDoc<User, Reg> = {
   }
 }
 
-const root = producer(doc);
+const root = producer<User, Reg>(doc);
+// type a = FlatObjectKey<User>;
+// (async () => {
+//   const a = await root.$$fetch({key:'address.detail'});
+// })();
 const app: Express = express();
 app.use(cors(corsOptions)) // Use this after the variable declaration
 app.use(express.json());
@@ -63,21 +68,28 @@ app.post('/users', async (req, res) => {
   res.json(data);
 });
 
-app.get('/users/:id', async (req, res) => {
+app.post('/users/:id', async (req, res) => {
   console.log('request path', req.path, req.params.id);
-  const data = await root.$$fetch({request: {id: req.params.id, queryId: req.query.queryId as string}});
+  console.dir(req.body, {depth: 10});
+  // const promise = await root.$$fetch({key:'address.detail'});
+  const data = await root.$$fetch({
+    request: {id: req.params.id, queryId: req.query.queryId as string},
+    config: req.body
+  });
+  console.log('response-->', data)
   res.json(data);
 });
 
-app.get('/users/:id/*', async (req, res) => {
+app.post('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKey<User>;
-  console.log('request path', paths, req.params.id);
-  const config = {wow: {want: true}};
+  console.log('request path', req.path, paths, req.params.id);
+  console.dir(req.body, {depth: 10});
   const data = await root.$$fetch({
     key: paths,
     request: {id: req.params.id, queryId: req.query.queryId as string},
-    config: config
+    config: req.body
   })
+  console.log('response-->', data)
   res.json(data);
 });
 

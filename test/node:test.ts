@@ -15,10 +15,10 @@ const doc: FetchObjectOrDocType<User> = {
 
 const defaultRequest: FetchRequest<User, Req> = {
   $request: {id: '1', queryId: 'q1'},
-  $config: {id: {want: true}},
+  $config: {id: {is: true}},
   address: {
     $request: {id: '2', queryId: 'q2'},
-    $config: {detail: {want: true}},
+    $config: {detail: {is: true}},
     detail: {
       $request: {id: '3', queryId: 'q3'}
     }
@@ -26,14 +26,24 @@ const defaultRequest: FetchRequest<User, Req> = {
 }
 
 const fetcher: Fetcher<Req> = async (doc, config) => {
-  //console.log('doc------>', doc);
-  //console.log('config------>');
+  console.log('doc------>', doc);
+  console.log('config------>');
   console.dir(config, {depth: 10});
   if (doc) {
     const url = new URL(doc.$ref);
     url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
-    const responsePromise = fetch(url, {method: 'GET'});
-    return responsePromise.then(it => it.json());
+    const body = doc.$config ? JSON.stringify(doc.$config) : undefined;
+    console.log('body-->', body)
+
+    const responsePromise = fetch(
+      url,
+      {method: 'POST',
+        body: body,
+        headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'}
+      }
+    );
+    const dataPromise = responsePromise.then(it => it.json());
+    return dataPromise;
   } else {
     return Promise.resolve(config?.value);
   }
@@ -47,8 +57,10 @@ const fetcher: Fetcher<Req> = async (doc, config) => {
   //   defaultRequest: defaultRequest
   // };
   // const root = await linkfetch<User, Req>(dataSet, fetcher, request);
+  // console.log('\n\n\n');
   // console.group('start','gogo')
-  // const address = await root.address({request: {id:'77', queryId:'777'}});
+  // const address = await root.address({request: {id: '77', queryId: '777'}});
+  // console.log('-->', address);
   // const address = await root.address();
   // console.groupEnd();
   // const address = await root.address({request: {id: '', queryId: ''}, config: {}});

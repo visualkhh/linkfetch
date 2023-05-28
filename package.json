@@ -1,6 +1,6 @@
 {
   "name": "linkfetch",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "main": "index.js",
   "license": "MIT",
   "description": "object field variable fetch system, Supports Lazy fetch with field access.",

@@ -11,7 +11,8 @@ const corsOptions = {
 
 type Reg = { id: string, queryId?: string };
 const doc: FetchProducerDoc<User, Reg> = {
-  $fetch: async (r) => {
+  $fetch: async (r, ) => {
+    console.log('----------', r);
     return {
       name: 'linkfetch',
       id: r.request?.id + `(queryId:${r.request?.queryId})`,
@@ -22,6 +23,7 @@ const doc: FetchProducerDoc<User, Reg> = {
   },
   address: {
     $fetch: async (r) => {
+        console.log('-address---------', r);
       return {
         zip: '6484' + `(queryId:${r.request?.queryId})`,
         detail: {
@@ -33,6 +35,7 @@ const doc: FetchProducerDoc<User, Reg> = {
     },
     detail: {
       $fetch: async (r) => {
+        console.log('-detail---------', r);
         return {
           first: `first-88 ${r.request?.id}` + `(queryId:${r.request?.queryId})`,
           last: `last-64-${r.request?.id}` + `(queryId:${r.request?.queryId})`
@@ -52,8 +55,11 @@ app.get('/', (req, res) => {
 });
 
 app.post('/users', async (req, res) => {
+  console.log('user--!! server, body request post');
+  console.dir(req.body, {depth: 10});
   const data = await root.$$request(req.body);
-  console.log('user--!! server, body post');
+  console.log('user--!! server, body response');
+  console.dir(data, {depth: 10});
   res.json(data);
 });
 

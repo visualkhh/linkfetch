@@ -53,10 +53,10 @@ type OptionalDeep<T> = {
 
 export type FetchDoc<T = any> = {
   [P in typeof Ref]: string
+}
+& {
+  [P in typeof ConfigFetch]?: ObjectConfig<T>
 };
-// & {
-//   [P in typeof ConfigFetch]?: ObjectConfig<T>
-// };
 export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
 
 export type FetchRequest<T, C> = {

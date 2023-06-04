@@ -21,3 +21,18 @@ const getObject = <P extends keyof FlatObjectKey<User>>(path: P): FlatObjectKey<
 }
 
 const detail = getObject('address.detail');
+//
+// const a = <T>(wow: T) => {
+//  return wow;
+//
+// }
+// const z= typeof a;
+// const ww = a<string>(1);
+//
+// type A<T>= {
+//   go: <Z>(p:T, z:Z) => T
+// }
+//
+// const f: A<string> = {
+//   go: a
+// }

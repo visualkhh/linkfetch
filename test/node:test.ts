@@ -1,5 +1,5 @@
 import { User } from './types/User';
-import { Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch } from 'linkfetch';
+import { FetchConfigConsumer, Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch } from 'linkfetch';
 
 type Req = {
   id: string;
@@ -19,22 +19,28 @@ const defaultRequest: FetchRequest<User, Req> = {
   address: {
     $request: {id: '2', queryId: 'q2'},
     $config: {detail: {is: true}},
+    // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
+    //   if (config?.request && 'test' in config.request) {
+    //     config.request.test
+    //   }
+    $fetch: async (r, config?:  FetchConfigConsumer<Req, User>) => {
+     return fetcher(r, config);
+    },
     detail: {
       $request: {id: '3', queryId: 'q3'}
     }
   }
 }
-
-const fetcher: Fetcher<Req> = async (doc, config) => {
-  console.log('doc------>', doc);
+const fetcher: Fetcher<Req, User> = async (doc, config) => {
+  // console.log('doc------>', doc);
   console.log('config------>');
+  const a= config!.path;
   console.dir(config, {depth: 10});
   if (doc) {
     const url = new URL(doc.$ref);
     url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
     const body = doc.$config ? JSON.stringify(doc.$config) : undefined;
-    console.log('body-->', body)
-
+    // console.log('body-->', body)
     const responsePromise = fetch(
       url,
       {method: 'POST',
@@ -50,17 +56,18 @@ const fetcher: Fetcher<Req> = async (doc, config) => {
 }
 
 (async () => {
-  console.log('lazy fetch------------------');
-  // const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
-  // const dataSet = {
-  //   data: doc,
-  //   defaultRequest: defaultRequest
-  // };
-  // const root = await linkfetch<User, Req>(dataSet, fetcher, request);
-  // console.log('\n\n\n');
-  // console.group('start','gogo')
-  // const address = await root.address({request: {id: '77', queryId: '777'}});
-  // console.log('-->', address);
+  // console.log('lazy fetch------------------');
+  const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
+  const dataSet = {
+    data: doc,
+    defaultRequest: defaultRequest
+  };
+  const root = await linkfetch<User, Req>(dataSet, fetcher, request);
+  console.log('\n\n\n');
+  const address = await root.address({request: {id: '77', queryId: '777'}});
+  console.log('-->', address);
+  const details = await address.detail({config: {first: {}}})
+  console.log('-->', details);
   // const address = await root.address();
   // console.groupEnd();
   // const address = await root.address({request: {id: '', queryId: ''}, config: {}});
@@ -71,12 +78,12 @@ const fetcher: Fetcher<Req> = async (doc, config) => {
   // console.log('JSON stringify:', JSON.stringify(await root.$$snapshot({allFetch: true})));
 
   // console.log('request all fetch------------------');
-  const requestData = await fetch('http://localhost:3000/users', {
-    method: 'post',
-    headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'},
-    body: JSON.stringify(defaultRequest)
-  }).then(it => it.json())
-  console.log('requestData', requestData);
+  // const requestData = await fetch('http://localhost:3000/users', {
+  //   method: 'post',
+  //   headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'},
+  //   body: JSON.stringify(defaultRequest)
+  // }).then(it => it.json())
+  // console.log('requestData', requestData);
   // const request = await linkfetch<User, Req>({
   //   data: requestData,
   //   defaultRequest: defaultRequest

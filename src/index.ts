@@ -3,8 +3,8 @@ export type PrefixFieldType = typeof PrefixField;
 export const MetaPrefixField = '$$' as const;
 export type MetaPrefixType = typeof MetaPrefixField;
 
-export const ProducerFetch = `${PrefixField}fetch` as const;
-export type ProducerFetchType = typeof ProducerFetch;
+export const Fetch = `${PrefixField}fetch` as const;
+export type FetchType = typeof Fetch;
 
 export const RequestFetch = `${PrefixField}request` as const;
 export type RequestFetchType = typeof RequestFetch;
@@ -51,37 +51,41 @@ type OptionalDeep<T> = {
 }
 
 export type FetchDoc<T = any> = {
-  [P in typeof Ref]: string
-}
-& {
+    [P in typeof Ref]: string
+  }
+  & {
   [P in typeof Config]?: ObjectConfig<T>
 };
 export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
 
-export type FetchRequest<T, C> = {
+export type FetchRequest<T, C, R = T> = {
     [P in typeof RequestFetch]: C;
   }
   & {
   [P in typeof Config]?: ObjectConfig<T>;
 }
   & {
-  [P in keyof T as T[P] extends object ? P : never]?: FetchRequest<T[P], C>;
+  [P in typeof Fetch]?: Fetcher<C, R>;
+}
+  & {
+  [P in keyof T as T[P] extends object ? P : never]?: FetchRequest<T[P], C, T>;
 }
 
 export type FetchObjectOrDocType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectOrDocType<T[P]> | FetchDoc<T> : T[P];
 } | FetchDoc<T>;
 
-export type Fetcher<C = any> = (doc?: FetchDoc, config?: { request?: C, value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig }) => Promise<any>;
+export type FetchConfigConsumer<C = any, T = undefined> = { request?: C, path?: (T extends undefined ? number : keyof FlatObjectKey<T> ), value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig };
+export type Fetcher<C = any, T = undefined> = (doc?: FetchDoc, config?: FetchConfigConsumer<C, T>) => Promise<any>;
 
-type ProducerFetchConfig<C, P extends keyof FlatObjectKey<T>, T> = { key?: P, request?: C, config?: ObjectConfig<T> };
-export type FetchRequestParameter<C, T> = { request?: C, config?: ObjectConfig<T> };
+type ProducerFetchConfig<C, P extends keyof FlatObjectKey<T>, T> = { path?: P, request?: C, config?: ObjectConfig<T> };
+export type FetchRequestParameter<C, T = undefined> = { path?: (T extends undefined ? string : keyof FlatObjectKey<T>), request?: C, config?: ObjectConfig<T> };
 export type FetchProducerDocReturnType<T> = { [key in keyof T]: T[key] extends object ? FetchDoc<T[key]> | T[key] : T[key] };
-export type FetchProducerDoc<T, C> = {
-    [P in typeof ProducerFetch]: (request: FetchRequestParameter<C, T>) => Promise<FetchProducerDocReturnType<T>>;
+export type FetchProducerDoc<T, C, R = T> = {
+    [P in typeof Fetch]: (request: FetchRequestParameter<C, R>) => Promise<FetchProducerDocReturnType<T>>;
   }
   & {
-  [P in keyof T as T[P] extends object ? P : never]?: FetchProducerDoc<T[P], C>;
+  [P in keyof T as T[P] extends object ? P : never]?: FetchProducerDoc<T[P], C, T>;
 }
 
 export type FetchObject<T, C = any> = {
@@ -91,12 +95,12 @@ export type FetchObject<T, C = any> = {
 // /////////////////////////////////////////////
 
 const isFetchDoc = (value: any): value is FetchDoc => {
-  return value && typeof value === 'object' && ( (Ref in value) || (Config in value) );
+  return value && typeof value === 'object' && ((Ref in value) || (Config in value));
 }
 
-const execute = async (target: any, keys: string[] | string = [], parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {
+const execute = async (target: any, paths: string[] | string = [], parameter?: any[], fieldLoopCallBack?: (target: any, prev: any, value: any, name: string) => Promise<any>) => {
   let t = target;
-  const keyArray = Array.isArray(keys) ? keys : keys.split('.');
+  const keyArray = Array.isArray(paths) ? paths : paths.split('.');
   for (const key of keyArray) {
     if (t === undefined || t === null) {
       return undefined;
@@ -110,17 +114,17 @@ const execute = async (target: any, keys: string[] | string = [], parameter?: an
 };
 
 // producer
-const fetchProducer = async <T, C>(target: FetchProducerDoc<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T >) => {
+const fetchProducer = async <T, C>(target: FetchProducerDoc<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T>) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
-  keyArray.push(ProducerFetch);
+  keyArray.push(Fetch);
   return await execute(target, keyArray, [config]);
 }
 
 export const producer = <T, C>(target: FetchProducerDoc<T, C>) => {
   const data = Object.assign(target, {
-  // @ts-ignore
-    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: ProducerFetchConfig< C, P, FlatObjectKey<T>[P]>): Promise<FlatObjectKey<T>[P]> => {
-      return await fetchProducer(target, config?.key as any, config as any);
+    // @ts-ignore
+    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: ProducerFetchConfig<C, P, FlatObjectKey<T>[P]>): Promise<FlatObjectKey<T>[P]> => {
+      return await fetchProducer(target, config?.path as any, config as any);
     },
     [MetaRequest]: async (request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
       return requestProducer(target, request);
@@ -130,16 +134,20 @@ export const producer = <T, C>(target: FetchProducerDoc<T, C>) => {
 }
 
 const requestProducer = async <T extends object, C>(data: FetchProducerDoc<T, C>, request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
-  const change = async (bowl: any, field: any, request: any) => {
+  const change = async (bowl: any, field: any, request: any, paths: string[] = []) => {
     for (const [key, value] of Array.from(Object.entries(request))) {
       if (key === RequestFetch) {
         const newRequest: FetchRequestParameter<C, T> = {
           request: value as any,
-          config: request[Config]
+          config: request[Config],
         }
-        Object.assign(bowl, await field?.[ProducerFetch]?.(newRequest));
+        if (paths.length > 0) {
+          (newRequest.path as any) = paths.join('.');
+        }
+        Object.assign(bowl, await field?.[Fetch]?.(newRequest));
       } else if (key !== RequestFetch && key !== Config && typeof value === 'object') {
-        bowl[key] = await change({}, field[key], request[key])
+        paths.push(key);
+        bowl[key] = await change({}, field[key], request[key], paths)
       }
     }
     return bowl;
@@ -151,7 +159,7 @@ const requestProducer = async <T extends object, C>(data: FetchProducerDoc<T, C>
 // linkfetch
 export const linkfetch = async <T extends object, C = any>(
   dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> },
-  fetch: Fetcher<C>,
+  fetch: Fetcher<C, T>,
   request?: { request?: C, config?: ObjectConfig<T>, linkfetchConfig?: FetchConfig }) => {
   const newData = Array.isArray(dataSet.data) ? [...dataSet.data] : Object.assign({}, dataSet.data);
   const targetResult = await linkfetchLoop({
@@ -160,8 +168,8 @@ export const linkfetch = async <T extends object, C = any>(
   }, fetch, request)({request: request?.request ?? dataSet.defaultRequest?.$request, config: request?.config});
 
   const executor = {
-    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: { key?: P, request?: C }) => {
-      return await execute(targetResult, config?.key as any, [config?.request],
+    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: { path?: P, request?: C }) => {
+      return await execute(targetResult, config?.path as any, [config?.request],
         async (target, prev, value, name) => {
           return await value(config?.request);
         }
@@ -176,16 +184,18 @@ export const linkfetch = async <T extends object, C = any>(
 
 const linkfetchLoop = <T extends object, C = any>(
   dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> },
-  fetch: Fetcher<C>,
-  config?: { linkfetchConfig?: FetchConfig }): (request?: { request?: C, config?: ObjectConfig<any> }) => Promise<FetchObject<T, C>> => {
+  fetch: Fetcher<C, T>,
+  config?: { linkfetchConfig?: FetchConfig },
+  paths: string[] = []): (request?: { request?: C, config?: ObjectConfig<any> }) => Promise<FetchObject<T, C>> => {
 
-  const change = (field: any, defaultReqeust?: any) => {
+  const change = (field: any, defaultReqeust?: any, paths: string[] = []) => {
     // console.log('field--@@->', field, reqeust)
     Object.entries(field)
       .filter(([key, value]) => typeof value === 'object' && !isFetchDoc(field) && !Array.isArray(value))
       .forEach(([key, value]) => {
-        field[key] = change(value, defaultReqeust?.[key]);
-    });
+        paths.push(key);
+        field[key] = change(value, defaultReqeust?.[key], paths);
+      });
 
     const doc = isFetchDoc(field) ? {...field} : undefined;
     // defaultConfig $config Setting 해준다
@@ -203,15 +213,20 @@ const linkfetchLoop = <T extends object, C = any>(
         };
         const newRequest = {...(r?.request ?? defaultReqeust?.[RequestFetch])};
         // newRequest.$config = newConfig.$config;
-        return fetch(doc, {
+        const fetchConfig: FetchConfigConsumer<C, T> = {
           request: newRequest,
           value: field,
           config: newConfig,
           linkfetchConfig: config?.linkfetchConfig
-        }).then(it => {
+        };
+        if (paths.length > 0 ) {
+          (fetchConfig.path as any) = paths.join('.');
+        }
+        const runFetch = (defaultReqeust?.[Fetch] ?? fetch) as Fetcher<C, T>;
+        return runFetch(doc, fetchConfig).then(it => {
           // console.log('fetch--->');
           console.dir(it, {depth: 10})
-          linkfetchLoop({data: it, defaultRequest: defaultReqeust}, fetch, config)
+          linkfetchLoop({data: it, defaultRequest: defaultReqeust}, fetch, config, paths)
           // p.$$config = it?.$config;
           p.$$linkfetch_cache = it;
           p.$$linkfetch_age++;
@@ -221,7 +236,7 @@ const linkfetchLoop = <T extends object, C = any>(
       {$$linkfetch_cache: undefined, $$linkfetch_age: 0});
     return p;
   }
-  const target = change(dataSet.data, dataSet?.defaultRequest);
+  const target = change(dataSet.data, dataSet?.defaultRequest, paths);
   return target;
 }
 

@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FetchProducerDoc, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType, ProducerFetch } from 'linkfetch';
+import { FetchRequestParameter, FetchProducerDoc, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType } from 'linkfetch';
 import { User } from './types/User';
 
 const corsOptions = {
@@ -25,7 +25,10 @@ const doc: FetchProducerDoc<User, Reg> = {
     };
   },
   address: {
-    $fetch: async (r) => {
+    // $fetch: async (r: FetchRequestParameter<Reg | {test: string}, User>) => {
+    //   if (r.request && 'test' in r.request) {
+    //   }
+    $fetch: async (r: FetchRequestParameter<Reg, User>) => {
       console.log('-address---------', r);
       return {
         zip: '6484' + `(queryId:${r.request?.queryId})`,
@@ -76,7 +79,7 @@ app.post('/users/:id', async (req, res) => {
     request: {id: req.params.id, queryId: req.query.queryId as string},
     config: req.body
   });
-  console.log('response-->', data)
+  // console.log('response-->', data)
   res.json(data);
 });
 
@@ -85,11 +88,11 @@ app.post('/users/:id/*', async (req, res) => {
   console.log('request path', req.path, paths, req.params.id);
   console.dir(req.body, {depth: 10});
   const data = await root.$$fetch({
-    key: paths,
+    path: paths,
     request: {id: req.params.id, queryId: req.query.queryId as string},
     config: req.body
   })
-  console.log('response-->', data)
+  // console.log('response-->', data)
   res.json(data);
 });
 

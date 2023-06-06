@@ -7,5 +7,6 @@ export type User = {
       last: string;
     };
     zip: string;
-  }
+  },
+  friends: User[];
 }

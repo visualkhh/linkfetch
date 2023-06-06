@@ -41,10 +41,15 @@ export type FlatObjectKey<T> = {
   // @ts-ignore
   [P in keyof FlatKey<T> as GetPath<T, P> extends object ? P : never]: GetPath<T, P>;
 }
-
-export type ObjectConfig<T> = {
-  [P in keyof T]?: { is?: boolean, config?: any };
+export type FlatKeyOptionAndType<T, TT> = {
+  // @ts-ignore
+  [P in keyof FlatKey<T>]?: TT;
 }
+
+export type ObjectConfigType = { is?: boolean, config?: any };
+// export type ObjectConfig<T> = {
+//   [P in keyof T]?: ObjectConfigType;
+// }
 
 type OptionalDeep<T> = {
   [P in keyof T]?: T[P] extends object ? OptionalDeep<T[P]> : T[P];
@@ -54,7 +59,7 @@ export type FetchDoc<T = any> = {
     [P in typeof Ref]: string
   }
   & {
-  [P in typeof Config]?: ObjectConfig<T>
+  [P in typeof Config]?: FlatKeyOptionAndType<T, ObjectConfigType>
 };
 export type FetchConfig = { defaultNull?: boolean; cached?: boolean; disableSync?: boolean };
 
@@ -62,7 +67,8 @@ export type FetchRequest<T, C, R = T> = {
     [P in typeof RequestFetch]: C;
   }
   & {
-  [P in typeof Config]?: ObjectConfig<T>;
+  [P in typeof Config]?: FlatKeyOptionAndType<T, ObjectConfigType>;
+  // [P in typeof Config]?: ObjectConfig<T>;
 }
   & {
   [P in typeof Fetch]?: Fetcher<C, R>;
@@ -75,11 +81,11 @@ export type FetchObjectOrDocType<T> = {
   [P in keyof T]: T[P] extends object ? FetchObjectOrDocType<T[P]> | FetchDoc<T> : T[P];
 } | FetchDoc<T>;
 
-export type FetchConfigConsumer<C = any, T = undefined> = { request?: C, path?: (T extends undefined ? number : keyof FlatObjectKey<T> ), value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig };
+export type FetchConfigConsumer<C = any, T = undefined> = { request?: C, path?: (T extends undefined ? number : keyof FlatObjectKey<T>), value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig };
 export type Fetcher<C = any, T = undefined> = (doc?: FetchDoc, config?: FetchConfigConsumer<C, T>) => Promise<any>;
 
-type ProducerFetchConfig<C, P extends keyof FlatObjectKey<T>, T> = { path?: P, request?: C, config?: ObjectConfig<T> };
-export type FetchRequestParameter<C, T = undefined> = { path?: (T extends undefined ? string : keyof FlatObjectKey<T>), request?: C, config?: ObjectConfig<T> };
+type ProducerFetchConfig<C, P extends keyof FlatObjectKey<T>, T> = { path?: P, request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> };
+export type FetchRequestParameter<C, T = undefined> = { path?: (T extends undefined ? string : keyof FlatObjectKey<T>), request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> };
 export type FetchProducerDocReturnType<T> = { [key in keyof T]: T[key] extends object ? FetchDoc<T[key]> | T[key] : T[key] };
 export type FetchProducerDoc<T, C, R = T> = {
     [P in typeof Fetch]: (request: FetchRequestParameter<C, R>) => Promise<FetchProducerDocReturnType<T>>;
@@ -160,7 +166,7 @@ const requestProducer = async <T extends object, C>(data: FetchProducerDoc<T, C>
 export const linkfetch = async <T extends object, C = any>(
   dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> },
   fetch: Fetcher<C, T>,
-  request?: { request?: C, config?: ObjectConfig<T>, linkfetchConfig?: FetchConfig }) => {
+  request?: { request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType>, linkfetchConfig?: FetchConfig }) => {
   const newData = Array.isArray(dataSet.data) ? [...dataSet.data] : Object.assign({}, dataSet.data);
   const targetResult = await linkfetchLoop({
     data: newData as FetchObjectOrDocType<T>,
@@ -186,7 +192,7 @@ const linkfetchLoop = <T extends object, C = any>(
   dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> },
   fetch: Fetcher<C, T>,
   config?: { linkfetchConfig?: FetchConfig },
-  paths: string[] = []): (request?: { request?: C, config?: ObjectConfig<any> }) => Promise<FetchObject<T, C>> => {
+  paths: string[] = []): (request?: { request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> }) => Promise<FetchObject<T, C>> => {
 
   const change = (field: any, defaultReqeust?: any, paths: string[] = []) => {
     // console.log('field--@@->', field, reqeust)
@@ -197,13 +203,14 @@ const linkfetchLoop = <T extends object, C = any>(
         field[key] = change(value, defaultReqeust?.[key], paths);
       });
 
+    // @ts-ignore
     const doc = isFetchDoc(field) ? {...field} : undefined;
     // defaultConfig $config Setting 해준다
     if (doc && defaultReqeust?.[Config]) {
       doc[Config] = doc[Config] ?? defaultReqeust?.[Config];
     }
     const p = Object.assign(
-      (r?: { request?: C, config?: ObjectConfig<any> }) => {
+      (r?: { request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> }) => {
         if (config?.linkfetchConfig?.cached && p.$$linkfetch_cache) {
           return Promise.resolve(p.$$linkfetch_cache);
         }
@@ -216,10 +223,10 @@ const linkfetchLoop = <T extends object, C = any>(
         const fetchConfig: FetchConfigConsumer<C, T> = {
           request: newRequest,
           value: field,
-          config: newConfig,
+          config: newConfig as any,
           linkfetchConfig: config?.linkfetchConfig
         };
-        if (paths.length > 0 ) {
+        if (paths.length > 0) {
           (fetchConfig.path as any) = paths.join('.');
         }
         const runFetch = (defaultReqeust?.[Fetch] ?? fetch) as Fetcher<C, T>;

@@ -23,8 +23,8 @@ const defaultRequest: FetchRequest<User, Req> = {
     //   if (config?.request && 'test' in config.request) {
     //     config.request.test
     //   }
-    $fetch: async (r, config?:  FetchConfigConsumer<Req, User>) => {
-     return fetcher(r, config);
+    $fetch: async (r, config?: FetchConfigConsumer<Req, User>) => {
+      return fetcher(r, config);
     },
     detail: {
       $request: {id: '3', queryId: 'q3'}
@@ -34,7 +34,7 @@ const defaultRequest: FetchRequest<User, Req> = {
 const fetcher: Fetcher<Req, User> = async (doc, config) => {
   // console.log('doc------>', doc);
   console.log('config------>');
-  const a= config!.path;
+  const a = config!.path;
   console.dir(config, {depth: 10});
   if (doc) {
     const url = new URL(doc.$ref);
@@ -43,7 +43,8 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
     // console.log('body-->', body)
     const responsePromise = fetch(
       url,
-      {method: 'POST',
+      {
+        method: 'POST',
         body: body,
         headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'}
       }

@@ -8,5 +8,8 @@ export type User = {
     };
     zip: string;
   },
+  office: {
+    colleagues: User[]
+  }
   friends: User[];
 }

@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FetchRequestParameter, FetchProducerDoc, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType } from 'linkfetch';
+import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchProducerDoc, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType } from 'linkfetch';
 import { User } from './types/User';
 
 const corsOptions = {
@@ -11,6 +11,11 @@ const corsOptions = {
 
 type Reg = { id: string, queryId?: string };
 const doc: FetchProducerDoc<User, Reg> = {
+  // 'friends': {
+  //   $fetch: async () => {
+  //     return '' as any;
+  //   }
+  // }
   $fetch: async (r,) => {
     console.log('-root---------', r);
     return {
@@ -21,8 +26,30 @@ const doc: FetchProducerDoc<User, Reg> = {
         $config: {
           zip: {is: true},
         }
+      },
+      friends: {
+        $ref: `http://localhost:3000/users/${r.request?.id}/friends`,
+      },
+      office: {
+        $ref: `http://localhost:3000/users/${r.request?.id}/office`,
       }
     };
+  },
+  friends: {
+    $fetch: async (r: FetchRequestParameter<Reg, User>) => {
+      console.log('-friends---------', r);
+      // @ts-ignore
+      const user: User = { id: '22'};
+      return [user];
+    },
+  },
+  office: {
+    $fetch: async (r: FetchRequestParameter<Reg, User>) => {
+      console.log('-office---------', r);
+      // @ts-ignore
+      const user: User = { id: '2u2'};
+      return {colleagues: [user]};
+    },
   },
   address: {
     // $fetch: async (r: FetchRequestParameter<Reg | {test: string}, User>) => {
@@ -79,12 +106,12 @@ app.post('/users/:id', async (req, res) => {
     request: {id: req.params.id, queryId: req.query.queryId as string},
     config: req.body
   });
-  // console.log('response-->', data)
+  console.log('response-->', data)
   res.json(data);
 });
 
 app.post('/users/:id/*', async (req, res) => {
-  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKey<User>;
+  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDepp<User>;
   console.log('request path', req.path, paths, req.params.id);
   console.dir(req.body, {depth: 10});
   const data = await root.$$fetch({

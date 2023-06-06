@@ -18,7 +18,14 @@ const defaultRequest: FetchRequest<User, Req> = {
   $request: {id: '1', queryId: 'q1'},
   $config: {id: {is: true}},
   friends: {
-    $request: {id: '2', queryId: 'q2'},
+    // $request: {wow:''},
+    get $request() {
+      return {wow: ''};
+    },
+    $fetch: async (r, p) => {
+      p?.request?.wow
+      return ''  as any;
+    }
   },
   office: {
     $request: {id: '2', queryId: 'q2'},
@@ -27,15 +34,16 @@ const defaultRequest: FetchRequest<User, Req> = {
     // }
   },
   address: {
-    $request: {id: '2', queryId: 'q2'},
+    $request: {id: '3', queryId: 'q3'},
     $config: {detail: {is: true}},
     // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
     //   if (config?.request && 'test' in config.request) {
     //     config.request.test
     //   }
-    // $fetch: async (r, config?: FetchConfigConsumer<Req, User>) => {
-    //   return fetcher(r, config);
-    // },
+    $fetch: async (r, c) => {
+      // c.request.id;
+      return fetcher(r, c);
+    },
     detail: {
       $request: {id: '3', queryId: 'q3'}
     }
@@ -69,15 +77,15 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
 
 (async () => {
   // console.log('lazy fetch------------------');
-  // const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
-  // const dataSet = {
-  //   data: doc,
-  //   defaultRequest: defaultRequest
-  // };
-  // const root = await linkfetch<User, Req>(dataSet, fetcher, request);
-  // console.log('\n\n\n');
-  // const f = await root.friends();
-  // console.log('---->', f);
+  const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
+  const dataSet = {
+    data: doc,
+    defaultRequest: defaultRequest
+  };
+  const root = await linkfetch<User, Req>(dataSet, fetcher, request);
+  console.log('\n\n\n');
+  const f = await root.friends({request: {wow: 'a'}});
+  console.log('---->', f);
   // const o = await root.office()
   // console.log('---->', o);
   // const address = await root.address({request: {id: '77', queryId: '777'}});
@@ -94,13 +102,13 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
   // console.log('JSON stringify:', JSON.stringify(await root.$$snapshot({allFetch: true})));
 
   // console.log('request all fetch------------------');
-  const requestData = await fetch('http://localhost:3000/users', {
-    method: 'post',
-    headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'},
-    body: JSON.stringify(defaultRequest)
-  }).then(it => it.json())
-  console.log('requestData');
-  console.dir(requestData, {depth: 5})
+  // const requestData = await fetch('http://localhost:3000/users', {
+  //   method: 'post',
+  //   headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'},
+  //   body: JSON.stringify(defaultRequest)
+  // }).then(it => it.json())
+  // console.log('requestData');
+  // console.dir(requestData, {depth: 5})
   // const request = await linkfetch<User, Req>({
   //   data: requestData,
   //   defaultRequest: defaultRequest

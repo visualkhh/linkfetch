@@ -6,6 +6,8 @@ export type MetaPrefixType = typeof MetaPrefixField;
 export const Fetch = `${PrefixField}fetch` as const;
 export type FetchType = typeof Fetch;
 
+export const RequestTypeFetch = `${PrefixField}requestType` as const;
+export type RequestTypeFetchType =  typeof RequestTypeFetch;
 export const RequestFetch = `${PrefixField}request` as const;
 export type RequestFetchType = typeof RequestFetch;
 export const Config = `${PrefixField}config` as const;
@@ -91,10 +93,24 @@ export type RequestFetchBody<T, C, R = T> = {
   & {
   [P in typeof Fetch]?: Fetcher<C, R>;
 };
-export type FetchRequest<T, C, R = T> = RequestFetchBody<T, C, R>
+
+export type FetchRequest<T extends {[k in typeof RequestTypeFetch]? : T[k]}, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
+// export type FetchRequest<T, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
+// export type FetchRequest<T, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
   & {
-  [P in keyof T as T[P] extends object ? P : never]?: T[P] extends any[] ? RequestFetchBody<T, C, R> :FetchRequest<T[P], C, T>;
+  [P in keyof Omit<T, RequestTypeFetchType> as T[P] extends object ? P : never]?:
+
+  T[P] extends any[] ?
+  // @ts-ignore
+    RequestFetchBody<T, T[P][RequestTypeFetchType] extends undefined ? C : T[P][RequestTypeFetchType], R>
+// @ts-ignore
+  : FetchRequest<T[P], C>;
 }
+
+export type DeleteRequestType<T> = {
+  [P in keyof Omit<T, RequestTypeFetchType>]: T[P] extends object ? DeleteRequestType<T[P]> : T[P];
+}
+
 
 export type FetchObjectOrDocType<T> = {
   [P in keyof T]?: T[P] extends object ? FetchObjectOrDocType<T[P]> | FetchDoc<T> : T[P];
@@ -119,10 +135,11 @@ export type FetchProducerDoc<T, C, R = T> = FetchFnc<T, C, R>
   // [P in keyof T as T[P] extends object ? P : never]?: FetchProducerDoc<T[P], C, T>;
 }
 
-export type FetchObject<T, C = any> = {
-  [P in keyof T]:
+// @ts-ignore
+export type FetchObject<T extends {[RequestTypeFetch]?: T[RequestTypeFetchType]}, C = any> = {
+  [P in keyof Omit<T, RequestTypeFetchType>]:
   T[P] extends object ?
-    T[P] extends any[] ? (request?: FetchRequestParameter<C, T[P]>) => Promise<T[P]> : (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
+    T[P] extends any[] ? (request?: FetchRequestParameter<T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], T[P]>) => Promise<T[P]> : (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
     // T[P] extends any[] ? T[P]: (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
     // (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
   : T[P];
@@ -162,7 +179,9 @@ export const producer = <T, C>(target: FetchProducerDoc<T, C>) => {
     [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDepp<T>>(config?: ProducerFetchConfig<C, P, FlatObjectKeyExcludeArrayDepp<T>[P]>): Promise<FlatObjectKeyExcludeArrayDepp<T>[P]> => {
       return await fetchProducer(target, config?.path as any, config as any);
     },
+    // @ts-ignore
     [MetaRequest]: async (request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
+      // @ts-ignore
       return requestProducer(target, request);
     }
   });
@@ -203,18 +222,19 @@ export const linkfetch = async <T extends object, C = any>(
   fetch: Fetcher<C, T>,
   request?: { request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType>, linkfetchConfig?: FetchConfig }) => {
   const newData = Array.isArray(dataSet.data) ? [...dataSet.data] : Object.assign({}, dataSet.data);
-  const targetResult = await linkfetchLoop({
+  const targetResult = await linkfetchLoop<T, C>({
     data: newData as FetchObjectOrDocType<T>,
     defaultRequest: dataSet.defaultRequest
+  // @ts-ignore
   }, fetch, request)({request: request?.request ?? dataSet.defaultRequest?.$request, config: request?.config});
 
   const executor = {
-    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: { path?: P, request?: C }) => {
+    [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDepp<T>>(config?: { path?: P, request?: C }) => {
       return await execute(targetResult, config?.path as any, [config?.request],
         async (target, prev, value, name) => {
           return await value(config?.request);
         }
-      ) as FlatObjectKey<T>[P];
+      ) as FlatObjectKeyExcludeArrayDepp<T>[P];
     },
     [MetaSnapshot]: async (config?: { allFetch?: boolean }): Promise<OptionalDeep<T>> => {
        return linkfetchSnapshot<T, C>(targetResult, config);
@@ -227,7 +247,8 @@ const linkfetchLoop = <T extends object, C = any>(
   dataSet: { data: FetchObjectOrDocType<T>, defaultRequest?: FetchRequest<T, C> },
   fetch: Fetcher<C, T>,
   config?: { linkfetchConfig?: FetchConfig },
-  paths: string[] = []): (request?: { request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> }) => Promise<FetchObject<T, C>> => {
+  // @ts-ignore
+  paths: string[] = []): (request?: { request?: string, config?: FlatKeyOptionAndType<T, ObjectConfigType> }) => Promise<FetchObject<T, C>> => {
 
   const change = (field: any, defaultReqeust?: any, paths: string[] = []) => {
     // console.log('field--@@->', field, reqeust)
@@ -245,10 +266,12 @@ const linkfetchLoop = <T extends object, C = any>(
       doc[Config] = doc[Config] ?? defaultReqeust?.[Config];
     }
     const p = Object.assign(
-      (r?: { request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> }) => {
+      // @ts-ignore
+      (r?: { request?: T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], config?: FlatKeyOptionAndType<T, ObjectConfigType> }) => {
         if (config?.linkfetchConfig?.cached && p.$$linkfetch_cache) {
           return Promise.resolve(p.$$linkfetch_cache);
         }
+        // @ts-ignore
         const newConfig: FetchRequest<T, C> = {
           $request: r?.request ?? defaultReqeust?.[RequestFetch],
           $config: r?.config ?? defaultReqeust?.[Config]
@@ -279,9 +302,10 @@ const linkfetchLoop = <T extends object, C = any>(
     return p;
   }
   const target = change(dataSet.data, dataSet?.defaultRequest, paths);
-  return target;
+  return target as any;
 }
 
+// @ts-ignore
 const linkfetchSnapshot = async <T extends object, C>(data: FetchObject<T, C>, config?: { allFetch?: boolean }): Promise<OptionalDeep<T>> => {
   const change = async (bowl: any, field: any) => {
     if (!field) {

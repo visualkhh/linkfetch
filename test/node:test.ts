@@ -39,7 +39,8 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
   if (doc) {
     const url = new URL(doc.$ref);
     url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
-    const body = doc.$config ? JSON.stringify(doc.$config) : undefined;
+    // @ts-ignore
+    const body = doc?.$config ? JSON.stringify(doc.$config) : undefined;
     // console.log('body-->', body)
     const responsePromise = fetch(
       url,

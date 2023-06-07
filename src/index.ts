@@ -209,12 +209,12 @@ export const linkfetch = async <T extends object, C = any>(
   }, fetch, request)({request: request?.request ?? dataSet.defaultRequest?.$request, config: request?.config});
 
   const executor = {
-    [MetaFetch]: async <P extends keyof FlatObjectKey<T>>(config?: { path?: P, request?: C }) => {
+    [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDepp<T>>(config?: { path?: P, request?: C }) => {
       return await execute(targetResult, config?.path as any, [config?.request],
         async (target, prev, value, name) => {
           return await value(config?.request);
         }
-      ) as FlatObjectKey<T>[P];
+      ) as FlatObjectKeyExcludeArrayDepp<T>[P];
     },
     [MetaSnapshot]: async (config?: { allFetch?: boolean }): Promise<OptionalDeep<T>> => {
        return linkfetchSnapshot<T, C>(targetResult, config);

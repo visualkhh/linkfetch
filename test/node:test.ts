@@ -69,14 +69,14 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
 
 (async () => {
   // console.log('lazy fetch------------------');
-  // const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
-  // const dataSet = {
-  //   data: doc,
-  //   defaultRequest: defaultRequest
-  // };
-  // const root = await linkfetch<User, Req>(dataSet, fetcher, request);
-  // console.log('\n\n\n');
-  // const f = await root.friends();
+  const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
+  const dataSet = {
+    data: doc,
+    defaultRequest: defaultRequest
+  };
+  const root = await linkfetch<User, Req>(dataSet, fetcher, request);
+  console.log('\n\n\n');
+  const f = await root.friends();
   // console.log('---->', f);
   // const o = await root.office()
   // console.log('---->', o);

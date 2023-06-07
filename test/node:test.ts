@@ -1,5 +1,5 @@
 import { User } from './types/User';
-import { FlatKeyExcludeArrayDeep, FlatKeyOptionAndType, ObjectConfigType, FetchConfigConsumer, Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch, FlatKey} from 'linkfetch';
+import { FlatObjectKeyExcludeArrayDepp, GlobalFetcher, FlatKeyExcludeArrayDeep, FlatKeyOptionAndType, ObjectConfigType, FetchConfigConsumer, Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch, FlatKey } from 'linkfetch';
 
 type Req = {
   id: string;
@@ -15,10 +15,19 @@ const doc: FetchObjectOrDocType<User> = {
 // const a: FlatKeyExcludeArrayDeep<User> = {
 // }
 const defaultRequest: FetchRequest<User, Req> = {
-  $request: {id: '1', queryId: 'q1'},
+  // $request: {id: '1', queryId: 'q1'},
+  $request: {wow: ''},
   $config: {id: {is: true}},
   friends: {
-    $request: {id: '2', queryId: 'q2'},
+    // $request: {wow:''},
+    get $request() {
+      return {wowfriends: ''};
+    },
+    $fetch: async (r, p) => {
+      // p?.path
+      p?.request?.wowfriends
+      return '' as any;
+    }
   },
   office: {
     $request: {id: '2', queryId: 'q2'},
@@ -27,28 +36,50 @@ const defaultRequest: FetchRequest<User, Req> = {
     // }
   },
   address: {
-    $request: {id: '2', queryId: 'q2'},
+    // $request: {id: '3', queryId: 'q3'},
+    $request: {wowaddress: 'aa'},
     $config: {detail: {is: true}},
     // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
     //   if (config?.request && 'test' in config.request) {
     //     config.request.test
     //   }
-    // $fetch: async (r, config?: FetchConfigConsumer<Req, User>) => {
-    //   return fetcher(r, config);
-    // },
+    $fetch: async (r, c) => {
+      // c.request.id;
+      return fetcher(r, c as any);
+    },
     detail: {
       $request: {id: '3', queryId: 'q3'}
     }
   }
 }
-const fetcher: Fetcher<Req, User> = async (doc, config) => {
+const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   // console.log('doc------>', doc);
   console.log('config------>');
-  const a = config!.path;
+  // config.path;
+  config.value;
+  config.request
+  const a = config.path;
+  if (config.path === 'address') {
+    config.request;
+   config.value;
+    // config.path;
+    // config.request?.wowaddress;
+  //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
+  //   const aa: a = {
+  //
+  //   }
+  //   config.request?.wowaddress;
+  }
+  if (config.path === 'office') {
+    config.request
+  }
+  if (config?.request && ('wowaddress' in config?.request)) {
+    // config.request.
+  };
   console.dir(config, {depth: 10});
   if (doc) {
     const url = new URL(doc.$ref);
-    url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
+    // url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
     // @ts-ignore
     const body = doc?.$config ? JSON.stringify(doc.$config) : undefined;
     // console.log('body-->', body)
@@ -69,14 +100,24 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
 
 (async () => {
   // console.log('lazy fetch------------------');
-  const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
   const dataSet = {
     data: doc,
     defaultRequest: defaultRequest
   };
-  const root = await linkfetch<User, Req>(dataSet, fetcher, request);
+  const root = await linkfetch<User, Req>(dataSet, fetcher,
+    {
+      request: {wow: '1'},
+      linkfetchConfig: {cached: true}
+    }
+  );
   console.log('\n\n\n');
-  const f = await root.friends();
+  // const r = await root.$$fetch({path: '', request: {wow:'11'}})
+  // console.log('----->', r)
+  const a = await root.address({request: {wowaddress: '11'}, config: {}})
+  console.log('---->', a);
+  // const f = await root.friends({request: {wowfriends: ''}, config: {}});
+
+
   // console.log('---->', f);
   // const o = await root.office()
   // console.log('---->', o);
@@ -94,13 +135,13 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
   // console.log('JSON stringify:', JSON.stringify(await root.$$snapshot({allFetch: true})));
 
   // console.log('request all fetch------------------');
-  const requestData = await fetch('http://localhost:3000/users', {
-    method: 'post',
-    headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'},
-    body: JSON.stringify(defaultRequest)
-  }).then(it => it.json())
-  console.log('requestData');
-  console.dir(requestData, {depth: 5})
+  // const requestData = await fetch('http://localhost:3000/users', {
+  //   method: 'post',
+  //   headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'},
+  //   body: JSON.stringify(defaultRequest)
+  // }).then(it => it.json())
+  // console.log('requestData');
+  // console.dir(requestData, {depth: 5})
   // const request = await linkfetch<User, Req>({
   //   data: requestData,
   //   defaultRequest: defaultRequest

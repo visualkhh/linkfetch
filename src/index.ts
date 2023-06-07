@@ -141,7 +141,7 @@ export type ExtractRequestTypeFetchType<T> = {
   [K in keyof T]: T[K] extends { [RequestTypeFetch]: infer W } ? W : never;
 }
 // export type FetchConfigConsumer<C = any, T = undefined> = { request?: C, path?: (T extends undefined ? number : keyof FlatObjectKey<T>), value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig };
-export type FetchConfigConsumer<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDepp<T>> = {
+export type FetchConfigConsumer<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = {
   // request?: C,
   // @ts-ignore
   path: (P); //(T extends undefined ? number : keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>),
@@ -151,13 +151,13 @@ export type FetchConfigConsumer<C = any, T = undefined, P = keyof FlatObjectKeyE
   config?: FetchRequest<any, C>,
   linkfetchConfig?: FetchConfig
 };
-export type Fetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDepp<T>> = (
+export type Fetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = (
   doc: FetchDoc | undefined,
   // config: FetchConfigConsumer<ValueOf<ExtractRequestTypeFetchType<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>>|C, T>
   config: FetchConfigConsumer<C, T, P>
 ) => Promise<any>;
 
-export type GlobalFetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDepp<T>> = Fetcher<(ValueOf<ExtractRequestTypeFetchType<FlatObjectKeyExcludeArrayDepp<T>>>)|C, T, P>;
+export type GlobalFetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = Fetcher<(ValueOf<ExtractRequestTypeFetchType<FlatObjectKeyExcludeArrayDepp<T>>>)|C, T, P>;
 
 // type ProducerFetchConfig<C, P extends keyof FlatObjectKey<T>, T> = { path?: P, request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> };
 type ProducerFetchConfig<C, P extends keyof FlatObjectKeyExcludeArrayDepp<T>, T> = {

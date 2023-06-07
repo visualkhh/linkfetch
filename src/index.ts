@@ -141,21 +141,23 @@ export type ExtractRequestTypeFetchType<T> = {
   [K in keyof T]: T[K] extends { [RequestTypeFetch]: infer W } ? W : never;
 }
 // export type FetchConfigConsumer<C = any, T = undefined> = { request?: C, path?: (T extends undefined ? number : keyof FlatObjectKey<T>), value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig };
-export type FetchConfigConsumer<C = any, T = undefined> = {
+export type FetchConfigConsumer<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDepp<T>> = {
   // request?: C,
-  request?: RequestTypeFetchType extends keyof (FlatObjectKeyExcludeArrayDepp<T>[keyof FlatObjectKeyExcludeArrayDepp<T>]) ? string : C,
-  path: keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>; //(T extends undefined ? number : keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>),
+  // @ts-ignore
+  path: (P); //(T extends undefined ? number : keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>),
+  request?: C,
+  // request?: RequestTypeFetchType extends keyof FlatObjectKeyExcludeArrayDepp<T>[keyof P] ? string : number,
   value?: any,
   config?: FetchRequest<any, C>,
   linkfetchConfig?: FetchConfig
 };
-export type Fetcher<C = any, T = undefined> = (
+export type Fetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDepp<T>> = (
   doc: FetchDoc | undefined,
   // config: FetchConfigConsumer<ValueOf<ExtractRequestTypeFetchType<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>>|C, T>
-  config: FetchConfigConsumer<C, T>
+  config: FetchConfigConsumer<C, T, P>
 ) => Promise<any>;
 
-export type GlobalFetcher<C = any, T = undefined> = Fetcher<ValueOf<ExtractRequestTypeFetchType<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>>|C, T>;
+export type GlobalFetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDepp<T>> = Fetcher<(ValueOf<ExtractRequestTypeFetchType<FlatObjectKeyExcludeArrayDepp<T>>>)|C, T, P>;
 
 // type ProducerFetchConfig<C, P extends keyof FlatObjectKey<T>, T> = { path?: P, request?: C, config?: FlatKeyOptionAndType<T, ObjectConfigType> };
 type ProducerFetchConfig<C, P extends keyof FlatObjectKeyExcludeArrayDepp<T>, T> = {

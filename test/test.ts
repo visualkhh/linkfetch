@@ -76,10 +76,18 @@ const t: TT = {
 }
 
 type ValueOf<T> = T[keyof T];
-
+type ExcludeNever<T> = {
+  [K in keyof T as T[K] extends never ? never : K]: T[K];
+};
 type AAA = {
   [K in keyof TT]: TT[K] extends { ['$wow']: infer U } ? U : never;
 };
+
+const aa:ExcludeNever<AAA> = {
+  '': {gggg:'1'},
+  name: 1,
+  age: '1',
+}
 
 const a:ValueOf<AAA> = '22'
 

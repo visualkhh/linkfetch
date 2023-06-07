@@ -57,14 +57,15 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   console.log('config------>');
   // config.path;
   const a = config.path;
-  // if (config.path === 'address') {
-  //   // config.path;
+  if (config.path === 'address') {
+    // config.path;
+    // config.request?.wowaddress;
   //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
   //   const aa: a = {
   //
   //   }
   //   config.request?.wowaddress;
-  // }
+  }
   if (config?.request && ('wowaddress' in config?.request)) {
     // config.request.
   };

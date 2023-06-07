@@ -1,4 +1,4 @@
-import { RequestTypeFetch, RequestTypeFetchType, DeleteRequestType } from 'linkfetch';
+import { ExtractRequestTypeFetchType, RequestTypeFetch, RequestTypeFetchType, DeleteRequestType, FlatObjectKeyExcludeArrayDepp } from 'linkfetch';
 
 export type User = {
   name: string;
@@ -14,6 +14,7 @@ export type User = {
     zip: string;
     [RequestTypeFetch]: {
       wowaddress: string;
+      wowaddressggg?: string;
     }
   },
   office: {
@@ -22,6 +23,7 @@ export type User = {
   friends: User[]
   & {  [RequestTypeFetch]: {
       wowfriends: string;
+      gg?: string;
     }
   }
   //   & {
@@ -30,7 +32,6 @@ export type User = {
   //   }
   // };
 }
-
 export type UserOrigin = DeleteRequestType<User>;
 const user: UserOrigin = {
   id: '',

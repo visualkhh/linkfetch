@@ -1,5 +1,5 @@
 import { User } from './types/User';
-import { FlatKeyExcludeArrayDeep, FlatKeyOptionAndType, ObjectConfigType, FetchConfigConsumer, Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch, FlatKey} from 'linkfetch';
+import { FlatObjectKeyExcludeArrayDepp, GlobalFetcher, FlatKeyExcludeArrayDeep, FlatKeyOptionAndType, ObjectConfigType, FetchConfigConsumer, Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch, FlatKey } from 'linkfetch';
 
 type Req = {
   id: string;
@@ -24,8 +24,9 @@ const defaultRequest: FetchRequest<User, Req> = {
       return {wowfriends: ''};
     },
     $fetch: async (r, p) => {
+      // p?.path
       p?.request?.wowfriends
-      return ''  as any;
+      return '' as any;
     }
   },
   office: {
@@ -51,10 +52,22 @@ const defaultRequest: FetchRequest<User, Req> = {
     }
   }
 }
-const fetcher: Fetcher<Req, User> = async (doc, config) => {
+const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   // console.log('doc------>', doc);
   console.log('config------>');
-  const a = config!.path;
+  // config.path;
+  const a = config.path;
+  // if (config.path === 'address') {
+  //   // config.path;
+  //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
+  //   const aa: a = {
+  //
+  //   }
+  //   config.request?.wowaddress;
+  // }
+  if (config?.request && ('wowaddress' in config?.request)) {
+    // config.request.
+  };
   console.dir(config, {depth: 10});
   if (doc) {
     const url = new URL(doc.$ref);
@@ -79,16 +92,22 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
 
 (async () => {
   // console.log('lazy fetch------------------');
-  const request = {request: {id: '1', queryId: '2'}, linkfetchConfig: {cached: true}};
   const dataSet = {
     data: doc,
     defaultRequest: defaultRequest
   };
-  const root = await linkfetch<User, Req>(dataSet, fetcher, request);
+  const root = await linkfetch<User, Req>(dataSet, fetcher,
+    {
+      request: {wow: '1'},
+      linkfetchConfig: {cached: true}
+    }
+  );
   console.log('\n\n\n');
-  const a = await root.address({request: {wowaddress: ''}, config: {}})
-
-  const f = await root.friends({request: {wowfriends:''}, config: {}});
+  // const r = await root.$$fetch({path: '', request: {wow:'11'}})
+  // console.log('----->', r)
+  const a = await root.address({request: {wowaddress: '11'}, config: {}})
+  console.log('---->', a);
+  // const f = await root.friends({request: {wowfriends: ''}, config: {}});
 
 
   // console.log('---->', f);

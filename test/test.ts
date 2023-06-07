@@ -36,3 +36,18 @@ const detail = getObject('address.detail');
 // const f: A<string> = {
 //   go: a
 // }
+
+type NoOffice = {}
+type Office = {
+  name: string;
+}
+
+// @ts-ignore
+type UserOffice<T, C> = C extends keyof T ? T[C] : number;
+type go = UserOffice<Office, 'name'>;
+// type UserOffice<T, C, W> = [Office[C]] extends [unknown] ? W : Office[C];
+// type UserOffice<T extends Office, C extends keyof T> = T[C] extends unknown ? NoOffice : T[C];
+
+// type go = UserOffice<Office, 'name1'>;
+// const u: UserOffice<Office, 'name'> = ''
+// const u: UserOffice<Office, 'name'> = ''

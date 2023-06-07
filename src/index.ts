@@ -63,7 +63,7 @@ export type FlatObjectKeyExcludeArrayDepp<T> = {
 }
 export type FlatKeyOptionAndType<T, TT> = {
   // @ts-ignore
-  [P in keyof FlatKeyExcludeArrayDeep<T>]?: TT;
+  [P in keyof FlatKeyExcludeArrayDeep<T> as T extends any[] ? never: P]?: TT;
 }
 
 export type ObjectConfigType = { is?: boolean, config?: any };
@@ -94,7 +94,9 @@ export type RequestFetchBody<T, C, R = T> = {
   [P in typeof Fetch]?: Fetcher<C, R>;
 };
 
-export type FetchRequest<T extends {[k in typeof RequestTypeFetch]? : T[k]}, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
+// export type FetchRequest<T extends {[k in typeof RequestTypeFetch]? : T[k]}, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
+// @ts-ignore
+export type FetchRequest<T, C, R = T> = RequestFetchBody<T, RequestTypeFetchType extends keyof T ? T[RequestTypeFetchType] : C, R>
 // export type FetchRequest<T, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
 // export type FetchRequest<T, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
   & {
@@ -139,9 +141,9 @@ export type FetchProducerDoc<T, C, R = T> = FetchFnc<T, C, R>
 export type FetchObject<T extends {[RequestTypeFetch]?: T[RequestTypeFetchType]}, C = any> = {
   [P in keyof Omit<T, RequestTypeFetchType>]:
   T[P] extends object ?
-    T[P] extends any[] ? (request?: FetchRequestParameter<T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], T[P]>) => Promise<T[P]> : (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
-    // T[P] extends any[] ? T[P]: (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
-    // (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
+    T[P] extends any[] ? (request?: FetchRequestParameter<RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C, T[P]>) => Promise<T[P]> : (request?: FetchRequestParameter<RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C, T[P]>) => Promise<FetchObject<T[P], RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C>>
+    // T[P] extends any[] ? (request?: FetchRequestParameter<RequestTypeFetchType extends keyof T ? T[RequestTypeFetchType] : C , T[P]>) => Promise<T[P]> : (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
+    // T[P] extends any[] ? (request?: FetchRequestParameter<T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], T[P]>) => Promise<T[P]> : (request?: FetchRequestParameter<C, T[P]>) => Promise<FetchObject<T[P], C>>
   : T[P];
 }
 

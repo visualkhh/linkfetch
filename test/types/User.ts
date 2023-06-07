@@ -1,30 +1,34 @@
-import { RequestTypeFetch, DeleteRequestType } from 'linkfetch';
+import { RequestTypeFetch, RequestTypeFetchType, DeleteRequestType } from 'linkfetch';
 
 export type User = {
   name: string;
   id: string;
-  // [RequestTypeFetch]: {
-  //   wow: string;
-  // },
+  [RequestTypeFetch]: {
+    wow: string;
+  },
   address: {
     detail: {
       first: string;
       last: string;
     };
     zip: string;
-    // [RequestTypeFetch]: {
-    //   wow: string;
-    // }
+    [RequestTypeFetch]: {
+      wowaddress: string;
+    }
   },
   office: {
     colleagues: User[]
   }
   friends: User[]
-    & {
-    [RequestTypeFetch]: {
-      wow: string;
+  & {  [RequestTypeFetch]: {
+      wowfriends: string;
     }
-  };
+  }
+  //   & {
+  //   [key in RequestTypeFetchType]: {
+  //     wowfriends: string;
+  //   }
+  // };
 }
 
 export type UserOrigin = DeleteRequestType<User>;

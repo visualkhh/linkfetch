@@ -15,15 +15,16 @@ const doc: FetchObjectOrDocType<User> = {
 // const a: FlatKeyExcludeArrayDeep<User> = {
 // }
 const defaultRequest: FetchRequest<User, Req> = {
-  $request: {id: '1', queryId: 'q1'},
+  // $request: {id: '1', queryId: 'q1'},
+  $request: {wow: ''},
   $config: {id: {is: true}},
   friends: {
     // $request: {wow:''},
     get $request() {
-      return {wow: ''};
+      return {wowfriends: ''};
     },
     $fetch: async (r, p) => {
-      p?.request?.wow
+      p?.request?.wowfriends
       return ''  as any;
     }
   },
@@ -34,7 +35,8 @@ const defaultRequest: FetchRequest<User, Req> = {
     // }
   },
   address: {
-    $request: {id: '3', queryId: 'q3'},
+    // $request: {id: '3', queryId: 'q3'},
+    $request: {wowaddress: 'aa'},
     $config: {detail: {is: true}},
     // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
     //   if (config?.request && 'test' in config.request) {
@@ -42,7 +44,7 @@ const defaultRequest: FetchRequest<User, Req> = {
     //   }
     $fetch: async (r, c) => {
       // c.request.id;
-      return fetcher(r, c);
+      return fetcher(r, c as any);
     },
     detail: {
       $request: {id: '3', queryId: 'q3'}
@@ -84,8 +86,12 @@ const fetcher: Fetcher<Req, User> = async (doc, config) => {
   };
   const root = await linkfetch<User, Req>(dataSet, fetcher, request);
   console.log('\n\n\n');
-  const f = await root.friends({request: {wow: 'a'}});
-  console.log('---->', f);
+  const a = await root.address({request: {wowaddress: ''}, config: {}})
+
+  const f = await root.friends({request: {wowfriends:''}, config: {}});
+
+
+  // console.log('---->', f);
   // const o = await root.office()
   // console.log('---->', o);
   // const address = await root.address({request: {id: '77', queryId: '777'}});

@@ -99,10 +99,10 @@ type NameOrAge = ValueOf<WOW>;
 // } : never;
 
 // Extract all `$wow` field values from `Office` type
-type WowFieldValues = ExtractWowField<Office>;
+// type WowFieldValues = ExtractWowField<Office>;
 // Usage example
-const wowValue0: WowFieldValues = {age: '', name: 1, good: {job: {name: 'aa'}}};
-console.log('-------', wowValue0);
+// const wowValue0: WowFieldValues = {age: '', name: 1, good: {job: {name: 'aa'}}};
+// console.log('-------', wowValue0);
 // const wowValue1: WowFieldValues = { gggg: '1' };
 // const wowValue2: WowFieldValues = 42; // Error: Type 'number' is not assignable to type '{ gggg: string; }'
 // const wowValue3: WowFieldValues = { name: 'aa' }; // Error: Type 'string' is not assignable to type 'number'

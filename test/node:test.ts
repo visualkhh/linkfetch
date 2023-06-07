@@ -71,7 +71,7 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   console.dir(config, {depth: 10});
   if (doc) {
     const url = new URL(doc.$ref);
-    url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
+    // url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
     // @ts-ignore
     const body = doc?.$config ? JSON.stringify(doc.$config) : undefined;
     // console.log('body-->', body)

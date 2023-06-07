@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchProducerDoc, FlatObjectKeyExcludeArrayDeppAndDeleteType, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType } from 'linkfetch';
+import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchProducerDoc, FlatObjectKeyExcludeArrayDeppAndDeleteType, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType, RequestType } from 'linkfetch';
 import { User } from './types/User';
 
 const corsOptions = {
@@ -24,10 +24,11 @@ const doc: FetchProducerDoc<User, Reg> = {
       id: r.request?.wow + `(queryId:${r.request?.wow})`,
       // id: r.request?.id + `(queryId:${r.request?.queryId})`,
       address: {
+
         $ref: `http://localhost:3000/users/${r.request?.wow}/address`,
         // $ref: `http://localhost:3000/users/${r.request?.id}/address`,
         $config: {
-          zip: {is: true},
+          secondZip: {is: true},
         }
       },
       friends: {
@@ -40,22 +41,40 @@ const doc: FetchProducerDoc<User, Reg> = {
       }
     };
   },
-  // friends: {
-  //   $fetch: async (r) => {
-  //     console.log('-friends---------', r);
-  //     // @ts-ignore
-  //     const user: User = { id: '22'};
-  //     return [user];
-  //   },
-  // },
-  // office: {
-  //   $fetch: async (r: FetchRequestParameter<Reg, User>) => {
-  //     console.log('-office---------', r);
-  //     // @ts-ignore
-  //     const user: User = { id: '2u2'};
-  //     return {colleagues: [user]};
-  //   },
-  // },
+  friends: {
+    $fetch: async (r) => {
+      console.log('-friends------aa---', r);
+      // @ts-ignore
+      const user: User = {id: '22'};
+      return [user] as (User[] & {
+        [RequestType]: {
+          wowfriends: string;
+          gg?: string;
+        }
+      });
+    },
+  },
+  office: {
+    $fetch: async (r) => {
+      console.log('-office---------', r);
+      const user: User = {id: '112u2'} as User;
+      const user2: User = {id: '112u2'} as User;
+      return {colleagues: [user, user2]};
+      // return {
+      //   colleagues: {
+      //     $ref: `http://localhost:3000/users/1/office/colleagues`,
+      //   }
+      // };
+    },
+    colleagues: {
+      $fetch: async (r) => {
+        const user: User = {id: '2u2'} as User;
+        const user2: User = {id: '2u2'} as User;
+        return [user, user2];
+      }
+    }
+  },
+
   address: {
     // $fetch: async (r: FetchRequestParameter<Reg | {test: string}, User>) => {
     //   if (r.request && 'test' in r.request) {
@@ -64,20 +83,31 @@ const doc: FetchProducerDoc<User, Reg> = {
       console.log('-address---------', r);
       return {
         zip: '6484' + `(queryId:${r.request?.wowaddress})`,
-        detail: {
-          $ref: `http://localhost:3000/users/${r.request?.wowaddress}/address/detail`
+        details: {
+          $ref: `http://localhost:3000/users/${r.request?.wowaddress}/address/details`
         }
       }
     },
-    //   detail: {
-    //     $fetch: async (r) => {
-    //       console.log('-detail---------', r);
-    //       return {
-    //         first: `first-88 ${r.request?.id}` + `(queryId:${r.request?.queryId})`,
-    //         last: `last-64-${r.request?.id}` + `(queryId:${r.request?.queryId})`
-    //       }
-    //     }
-    //   }
+    details: {
+      $fetch: async (r) => {
+        console.log('-detail---------', r);
+        return {
+          first: `first-88 ${r.request?.id}` + `(queryId:${r.request?.queryId})`,
+          last: `last-64-${r.request?.id}` + `(queryId:${r.request?.queryId})`,
+          subDetails: {
+            $ref: `http://localhost:3000/users/${r.request?.id}/address/details/subDetails`
+          }
+        }
+      },
+      // subDetails: {
+      //   $fetch: async (r) => {
+      //     return {
+      //       first: 'subDetails first',
+      //       last: 'subDetails last',
+      //     }
+      //   }
+      // }
+    }
   }
 }
 
@@ -123,14 +153,16 @@ app.post('/users/:id', async (req, res) => {
 
 app.post('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;
-  console.log('request /users/:id/*  path', req.path, paths, req.params.id);
+  const requestData = {...req.params, ...req.query};
+  console.log('request /users/:id/*  path', req.path, paths, requestData);
   console.dir(req.body, {depth: 10});
   const data = await root.$$fetch({
     path: paths as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>,
-    request: {id: req.params.id, queryId: req.query.queryId as string},
+    // request: {id: req.params.id, queryId: req.query.queryId as string},
+    request: requestData,
     config: req.body
   })
-  // console.log('response-->', data)
+  console.log('response-->', data)
   res.json(data);
 });
 

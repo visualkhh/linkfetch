@@ -131,28 +131,79 @@ type NameOrAge = ValueOf<WOW>;
 // } as const
 
 
-type ZA = {
-  zname: string;
-  zage: number;
-}
-type ZB<K = keyof ZA> = K extends keyof ZA ? {
-  key: K;
-  value: ZA[K];
-} : never;
+// type ZA = {
+//   zname: string;
+//   zage: number;
+// }
+// type ZB<K = keyof ZA> = K extends keyof ZA ? {
+//   key: K;
+//   value: ZA[K];
+// } : never;
+//
+// let zb: ZB = {
+//   key: 'zname',
+//   value: '1'
+// }
+// zb = {
+//   key : 'zage',
+//   value : 1
+// }
+//
+// if (zb.key === 'zname') {
+//   zb.value;
+//   // @ts-ignore
+// } else if (zb.key === 'zage') {
+//   // @ts-ignore
+//   zb.value;
+// }
+// type ExtractOptionalUndefined<T> = {
+//   [K in keyof T as undefined extends T[K] ? K : never]: T[K];
+// };
+//
+// // Example usage
+// type A = { name?: string; age: number; city?: string };
+//
+// type OptionalUndefinedFields = ExtractOptionalUndefined<A>;
 
-let zb: ZB = {
-  key: 'zname',
-  value: '1'
+
+//
+// type ExtractOptionalUndefined<T> = {
+//   [K in keyof T as undefined extends T[K] ? K : never]: T[K];
+// };
+//
+// type ExtractOnlyOptionalUndefined<T> = Omit<T, keyof ExtractOptionalUndefined<T>>;
+//
+// // Example usage
+// type A = { name?: string; age: number; city?: string };
+//
+// type OnlyOptionalUndefinedFields = ExtractOnlyOptionalUndefined<A>
+//
+//
+//
+type WOW = {name?: string, age: number, address?: string};
+type ExtractOptionalUndefined<T> = {
+  [K in keyof T as undefined extends T[K] ? K : never]: T[K];
+  // [K in keyof T as T[K] extends undefined ? K : never]: T[K];
 }
-zb = {
-  key : 'zage',
-  value : 1
+type w = ExtractOptionalUndefined<WOW>;
+const ww: w = {
+
 }
 
-if (zb.key === 'zname') {
-  zb.value;
-  // @ts-ignore
-} else if (zb.key === 'zage') {
-  // @ts-ignore
-  zb.value;
+
+
+type UU = {
+  name: string;
 }
+
+// @ts-ignore
+type UU2<T, C, W> = undefined extends UU[C]  ? W : UU[C];
+
+const u: UU2<UU, 'name', number> = ''
+
+export type AA<T> = {
+  [K in keyof T as T[K] extends object ? K : never]: T[K]
+}
+
+
+type AAA = AA<{name: string, age: number, aa: {}, aaa: string[]}>;

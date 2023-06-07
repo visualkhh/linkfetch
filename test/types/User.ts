@@ -1,27 +1,42 @@
-import { ExtractRequestTypeFetchType, RequestTypeFetch, RequestTypeFetchType, DeleteRequestType, FlatObjectKeyExcludeArrayDepp } from 'linkfetch';
+import {
+  ExtractRequestTypeFetchType,
+  RequestType,
+  RequestTypeType,
+  DeleteRequestType,
+  FlatObjectKeyExcludeArrayDeppAndDeleteType,
+  FlatObjectKeyExcludeArrayDepp
+} from 'linkfetch';
 
 export type User = {
   name: string;
   id: string;
-  [RequestTypeFetch]: {
+  optionId?: string;
+  [RequestType]: {
     wow: string;
   },
   address: {
-    detail: {
+    details: {
       first: string;
-      last: string;
+      last?: string;
+      subDetails: {
+        first: string;
+        last?: string;
+      }
     };
     zip: string;
-    [RequestTypeFetch]: {
+    secondZip?: string;
+    [RequestType]: {
       wowaddress: string;
       wowaddressggg?: string;
     }
   },
   office: {
+    name?: string;
     colleagues: User[]
   }
   friends: User[]
-  & {  [RequestTypeFetch]: {
+    & {
+    [RequestType]: {
       wowfriends: string;
       gg?: string;
     }
@@ -32,22 +47,27 @@ export type User = {
   //   }
   // };
 }
-export type UserOrigin = DeleteRequestType<User>;
-const user: UserOrigin = {
-  id: '',
-  name: '',
-  address: {
-    zip: '',
-    detail: {
-      first: '',
-      last: ''
-    }
-  },
-  office: {
-    colleagues: []
-  },
-  friends: []
-}
+
+// const aaaa: FlatObjectKeyExcludeArrayDeppAndDeleteType<User> = {
+//   'address.detail.first'
+// }
+// export type UserOrigin = DeleteRequestType<User>;
+// const user: UserOrigin = {
+//   id: '',
+//   name: '',
+//   address: {
+//     zip: '',
+//     secondZip: '',
+//     detail: {
+//       first: '',
+//       last: ''
+//     }
+//   },
+//   office: {
+//     colleagues: []
+//   },
+//   friends: []
+// }
 
 // const t: User = {
 //

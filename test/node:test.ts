@@ -1,5 +1,5 @@
 import { User } from './types/User';
-import { FlatObjectKeyExcludeArrayDepp, GlobalFetcher, FlatKeyExcludeArrayDeep, FlatKeyOptionAndType, ObjectConfigType, FetchConfigConsumer, Fetcher, FetchObjectOrDocType, FetchRequest, linkfetch, FlatKey } from 'linkfetch';
+import { FetchObjectOrDocType, FetchRequest, GlobalFetcher, linkfetch, RequestTypeFetch } from 'linkfetch';
 
 type Req = {
   id: string;
@@ -16,18 +16,20 @@ const doc: FetchObjectOrDocType<User> = {
 // }
 const defaultRequest: FetchRequest<User, Req> = {
   // $request: {id: '1', queryId: 'q1'},
-  $request: {wow: ''},
-  $config: {id: {is: true}},
+  $request: {wow: '33'},
+  $config: {optionId: {is: true}},
+  $flushUpdate: true,
   friends: {
     // $request: {wow:''},
     get $request() {
       return {wowfriends: ''};
     },
-    $fetch: async (r, p) => {
-      // p?.path
-      p?.request?.wowfriends
-      return '' as any;
-    }
+    $config: {id: {format:'friends defaultConfig'}},
+    // $fetch: async (r, p) => {
+    //   // p?.path
+    //   p?.request?.wowfriends
+    //   return '' as any;
+    // }
   },
   office: {
     $request: {id: '2', queryId: 'q2'},
@@ -38,47 +40,55 @@ const defaultRequest: FetchRequest<User, Req> = {
   address: {
     // $request: {id: '3', queryId: 'q3'},
     $request: {wowaddress: 'aa'},
-    $config: {detail: {is: true}},
+    $config: {'details.last': {is: true}},
     // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
     //   if (config?.request && 'test' in config.request) {
     //     config.request.test
     //   }
-    $fetch: async (r, c) => {
-      // c.request.id;
-      return fetcher(r, c as any);
-    },
-    detail: {
-      $request: {id: '3', queryId: 'q3'}
+    // $fetch: async (r, c) => {
+    //   // c.request.id;
+    //   return fetcher(r, c as any);
+    // },
+    details: {
+      $request: {id: '3', queryId: 'q3'},
+      $config: {first: {format:'details defaultConfig'}}
     }
   }
 }
 const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   // console.log('doc------>', doc);
-  console.log('config------>');
+  console.log('config------>', doc);
   // config.path;
-  config.value;
-  config.request
-  const a = config.path;
+  // config.value;
+  // config.request
+  // const a = config.path;
   if (config.path === 'address') {
-    config.request;
-   config.value;
+    // config.request;
+    // config.value.
     // config.path;
     // config.request?.wowaddress;
-  //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
-  //   const aa: a = {
-  //
-  //   }
-  //   config.request?.wowaddress;
+    //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
+    //   const aa: a = {
+    //
+    //   }
+    //   config.request?.wowaddress;
   }
-  if (config.path === 'office') {
-    config.request
-  }
-  if (config?.request && ('wowaddress' in config?.request)) {
-    // config.request.
-  };
+  // if (config.path === 'office') {
+  //   config.request
+  // }
+  // if (config?.request && ('wowaddress' in config?.request)) {
+  // config.request.
+  // }
+  ;
   console.dir(config, {depth: 10});
   if (doc) {
+    console.log('------->', doc.$ref)
     const url = new URL(doc.$ref);
+    if (config.request) {
+      Object.entries(config.request).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+    }
     // url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
     // @ts-ignore
     const body = doc?.$config ? JSON.stringify(doc.$config) : undefined;
@@ -107,14 +117,132 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   const root = await linkfetch<User, Req>(dataSet, fetcher,
     {
       request: {wow: '1'},
+      config: {
+
+      },
       linkfetchConfig: {cached: true}
     }
   );
   console.log('\n\n\n');
-  // const r = await root.$$fetch({path: '', request: {wow:'11'}})
+  console.dir(root, {depth: 10});
+
+  const address = await root.address();
+  const details = await address.details()
+  const subDetails = await details.subDetails().catch(() => {
+    return {first:'zzzzz', last: 'zzzzz'}
+  });
+  console.log('----->', address, details, subDetails)
+
+  console.log('=========================\n');
+  // const details = await root.$$fetch({
+  //   path: 'address.details',
+  //   request: {
+  //     // '' : {wow: '2'},
+  //     // 'address': {
+  //     //  wowaddress: '3333',
+  //     //   wowaddressggg: '331'
+  //     // },
+  //     friends: {
+  //       wowfriends: '2222',
+  //       gg: '2222'
+  //     },
+  //     'address.details': {
+  //       id: 'address.details222211',
+  //       queryId: 'address.details222211'
+  //     }
+  //   },
+  //   config: {
+  //     address: {
+  //        zip: { format:'zipformat'}
+  //     },
+  //     'address.details': {
+  //       first: {
+  //         format: 'firstformat'
+  //       },
+  //       last: {
+  //         is: true,
+  //         format: 'lastformat'
+  //       }
+  //     }
+  //
+  //   },
+  //   flushUpdate: true
+  // });
+
+  // const subDetails = await details.subDetails()
+  // console.log('details---->', details, subDetails);
+
+  // const address = await root.address({
+  //   config: {
+  //
+  //     zip: {},
+  //     'details.first': {
+  //
+  //     }
+  //   }
+  // });
+  // const office = await root.office();
+  // console.log('office---->', office);
+  // const colleagues = await office.colleagues();
+  // console.log('colleagues---->', colleagues);
+
+  // console.log('address---->', address);
+  // const details = await address.details({
+  //   config: {
+  //     last: {},
+  //     first: {}
+  //   }
+  // });
+  // console.log('detail---->', details);
+  // const friends = await root.friends()
+  // console.log('friends---->', friends);
+  // friends.forEach(it => {
+  //   console.log('!!------>', it.id)
+  // })
+  // console.dir(details, {depth: 10});
+
+  // console.log('snapshot------------------');
+  // console.dir(await root.$$snapshot({
+  //   allFetch: true,
+  //   request: {
+  //     address: {
+  //       wowaddress: '2',
+  //       wowaddressggg: '22'
+  //     },
+  //     'address.details.subDetails': {
+  //       id: 'address.details.subDetails id',
+  //       queryId: 'address.details.subDetails queryId'
+  //     }
+  //   },
+  //   config: {
+  //     'address.details.subDetails': {
+  //       first: {format:  'snapshot address.details.subDetails first'},
+  //       last: {format: 'snapshot address.details.subDetails last'},
+  //     }
+  //   }
+  // }), {depth: 10});
+
+  // const r = await root.$$fetch({path: '', request: {wow:'11'}, config: {}})
   // console.log('----->', r)
-  const a = await root.address({request: {wowaddress: '11'}, config: {}})
-  console.log('---->', a);
+  // await root.$$fetch({path: 'office.colleagues', config: {
+  //   'address.detail.first': {},
+  //   'address.detail.last': {},
+  //     $forceUpdate: true
+  //   }})
+  //
+  // const a = await root.address({
+  //   request: {wowaddress: '11'},
+  //   config: {
+  //     'detail.last': {is: true},
+  //     'detail.first': {},
+  //   }
+  // })
+  // const o = await root.office();
+  // const c = await o.colleagues({
+  //   request: {id: '11', queryId: ''},
+  //   config: {}
+  // })
+  // console.log('---->', a);
   // const f = await root.friends({request: {wowfriends: ''}, config: {}});
 
 

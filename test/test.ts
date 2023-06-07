@@ -114,3 +114,45 @@ type NameOrAge = ValueOf<WOW>;
 // const wowValue1: WowFieldValues = { gggg: '1' };
 // const wowValue2: WowFieldValues = 42; // Error: Type 'number' is not assignable to type '{ gggg: string; }'
 // const wowValue3: WowFieldValues = { name: 'aa' }; // Error: Type 'string' is not assignable to type 'number'
+
+// type ZA = {
+//   zname: string;
+//   zage: number;
+// }
+//
+// type ZB<K extends keyof ZA = keyof ZA> = {
+//   key: K;
+//   value: ZA[K];
+// }
+//
+// const zb: ZB<'zname'> = {
+//   key: 'zname' ,
+//   value: 1
+// } as const
+
+
+type ZA = {
+  zname: string;
+  zage: number;
+}
+type ZB<K = keyof ZA> = K extends keyof ZA ? {
+  key: K;
+  value: ZA[K];
+} : never;
+
+let zb: ZB = {
+  key: 'zname',
+  value: '1'
+}
+zb = {
+  key : 'zage',
+  value : 1
+}
+
+if (zb.key === 'zname') {
+  zb.value;
+  // @ts-ignore
+} else if (zb.key === 'zage') {
+  // @ts-ignore
+  zb.value;
+}

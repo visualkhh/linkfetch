@@ -56,8 +56,12 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   // console.log('doc------>', doc);
   console.log('config------>');
   // config.path;
+  config.value;
+  config.request
   const a = config.path;
   if (config.path === 'address') {
+    config.request;
+   config.value;
     // config.path;
     // config.request?.wowaddress;
   //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
@@ -65,6 +69,9 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   //
   //   }
   //   config.request?.wowaddress;
+  }
+  if (config.path === 'office') {
+    config.request
   }
   if (config?.request && ('wowaddress' in config?.request)) {
     // config.request.

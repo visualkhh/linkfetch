@@ -113,63 +113,61 @@ const doc: FetchProducer<User, Reg> = {
 }
 
 const root = producer<User, Reg>(doc);
-
-
 // type a = FlatObjectKey<User>;
 // (async () => {
 //   const a = await root.$$fetch({key:'address.detail'});
 // })();
-//
-// const app: Express = express();
-// app.use(cors(corsOptions)) // Use this after the variable declaration
-// app.use(express.json());
-//
-// app.get('/', (req, res) => {
-//   res.send('Hello World! linkfetch server');
-// });
-//
-// app.post('/users', async (req, res) => {
-//   console.log('user--!! server, body request post');
-//   console.dir(req.body, {depth: 10});
-//   const data = await root.$$request(req.body);
-//   console.log('user--!! server, body response');
-//   console.dir(data, {depth: 10});
-//   res.json(data);
-// });
-//
-// app.post('/users/:id', async (req, res) => {
-//   console.log('request path', req.path, req.params.id);
-//   console.dir(req.body, {depth: 10});
-//   // const promise = await root.$$fetch({key:'address.detail'});
-//   // const a = await root.$$fetch({path: 'friends', request: {wowfriends: ''}});
-//   const data = await root.$$fetch({
-//     path: '',
-//     // path: 'address',
-//     // wow: {},
-//     request: {wow: req.params.id},
-//     // request: {id: req.params.id, queryId: req.query.queryId as string},
-//     config: req.body
-//   });
-//   console.log('response-->', data)
-//   res.json(data);
-// })
-// ;
-//
-// app.post('/users/:id/*', async (req, res) => {
-//   const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;
-//   const requestData = {...req.params, ...req.query};
-//   console.log('request /users/:id/*  path', req.path, paths, requestData);
-//   console.dir(req.body, {depth: 10});
-//   const data = await root.$$fetch({
-//     path: paths as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>,
-//     // request: {id: req.params.id, queryId: req.query.queryId as string},
-//     request: requestData,
-//     config: req.body
-//   })
-//   console.log('response-->', data)
-//   res.json(data);
-// });
-//
-// app.listen(3000, () => {
-//   console.log('Server started at port 3000');
-// });
+
+const app: Express = express();
+app.use(cors(corsOptions)) // Use this after the variable declaration
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.send('Hello World! linkfetch server');
+});
+
+app.post('/users', async (req, res) => {
+  console.log('user--!! server, body request post');
+  console.dir(req.body, {depth: 10});
+  const data = await root.$$request(req.body);
+  console.log('user--!! server, body response');
+  console.dir(data, {depth: 10});
+  res.json(data);
+});
+
+app.post('/users/:id', async (req, res) => {
+  console.log('request path', req.path, req.params.id);
+  console.dir(req.body, {depth: 10});
+  // const promise = await root.$$fetch({key:'address.detail'});
+  // const a = await root.$$fetch({path: 'friends', request: {wowfriends: ''}});
+  const data = await root.$$fetch({
+    path: '',
+    // path: 'address',
+    // wow: {},
+    request: {wow: req.params.id},
+    // request: {id: req.params.id, queryId: req.query.queryId as string},
+    config: req.body
+  });
+  console.log('response-->', data)
+  res.json(data);
+})
+;
+
+app.post('/users/:id/*', async (req, res) => {
+  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;
+  const requestData = {...req.params, ...req.query};
+  console.log('request /users/:id/*  path', req.path, paths, requestData);
+  console.dir(req.body, {depth: 10});
+  const data = await root.$$fetch({
+    path: paths as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>,
+    // request: {id: req.params.id, queryId: req.query.queryId as string},
+    request: requestData,
+    config: req.body
+  })
+  console.log('response-->', data)
+  res.json(data);
+});
+
+app.listen(3000, () => {
+  console.log('Server started at port 3000');
+});

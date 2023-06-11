@@ -5,7 +5,7 @@ type Req = {
   id: string;
   queryId: string;
 }
-
+(async () => {
 const doc: FetchObjectOrDocType<User> = {
   $ref: 'http://localhost:3000/users/1',
   address: {
@@ -45,10 +45,16 @@ const defaultRequest: FetchRequest<User, Req> = {
     //   if (config?.request && 'test' in config.request) {
     //     config.request.test
     //   }
-    // $fetch: async (r, c) => {
-    //   // c.request.id;
-    //   return fetcher(r, c as any);
-    // },
+    $fetch: async (r, c) => {
+      // @ts-ignore
+      // c.root.then(it => {
+      //   console.log('address defaultconfig root-------!!', it)
+      // })
+      console.log('address defaultconfig root--------',  root);
+      // const a = await c.root
+      // c.request.id;
+      return fetcher(r, c as any);
+    },
     details: {
       $request: {id: '3', queryId: 'q3'},
       $config: {first: {format:'details defaultConfig'}}
@@ -108,7 +114,7 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   }
 }
 
-(async () => {
+
   const dataSet = {
     data: doc,
     defaultRequest: defaultRequest
@@ -126,11 +132,12 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   console.dir(root, {depth: 10});
 
   const address = await root.address();
-  const details = await address.details()
-  const subDetails = await details.subDetails().catch(() => {
-    return {first:'zzzzz', last: 'zzzzz'}
-  });
-  console.log('----->', address, details, subDetails)
+  console.log('---end-->', root);
+  // const details = await address.details()
+  // const subDetails = await details.subDetails().catch(() => {
+  //   return {first:'zzzzz', last: 'zzzzz'}
+  // });
+  // console.log('----->', address, details, subDetails)
 
   console.log('=========================\n');
   // const details = await root.$$fetch({

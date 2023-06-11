@@ -1,5 +1,5 @@
 import { User } from './types/User';
-import { FetchObjectOrDocType, FetchRequest, GlobalFetcher, linkfetch, RequestTypeFetch } from 'linkfetch';
+import { FetchObjectOrDocType, FetchRequest, GlobalFetcher, linkfetch } from 'linkfetch';
 
 type Req = {
   id: string;
@@ -109,7 +109,6 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
 }
 
 (async () => {
-  // console.log('lazy fetch------------------');
   const dataSet = {
     data: doc,
     defaultRequest: defaultRequest

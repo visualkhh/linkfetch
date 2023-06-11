@@ -123,7 +123,7 @@ const corsOptions = {
 }
 
 type Reg = { id: string, queryId?: string};
-const doc: FetchProducerDoc<User, Reg> = {
+const doc: FetchProducer<User, Reg> = {
   $fetch: async (req) => {
     return {
       name: 'linkfetch',

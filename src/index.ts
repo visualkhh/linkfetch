@@ -215,16 +215,16 @@ export type FetchRequestParameter<C, T = undefined> = {
 
 export type FetchObjectRequestParameter<C, T = undefined> = Omit<FetchRequestParameter<C, T>, 'path'>;
 
-export type FetchProducerDocReturnType<T> = {
+export type FetchProducerReturnType<T> = {
   [key in keyof Omit<T, RequestTypeType>]: T[key] extends object ? FetchDoc<DeleteRequestType<T[key]>> | DeleteRequestType<T[key]> : DeleteRequestType<T[key]>
 };
 
 export type FetchFnc<T, C, R = T> = {
-  [P in typeof Fetch]: (request: FetchRequestParameter<RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>) => T extends (infer TA)[] ? Promise<TA[]> : Promise<FetchProducerDocReturnType<T>>;
+  [P in typeof Fetch]: (request: FetchRequestParameter<RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>) => T extends (infer TA)[] ? Promise<TA[]> : Promise<FetchProducerReturnType<T>>;
 };
-export type FetchProducerDoc<T, C, R = T> = FetchFnc<T, C, R>
+export type FetchProducer<T, C, R = T> = FetchFnc<T, C, R>
   & {
-  [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?: T[P] extends unknown[] ? FetchFnc<T[P], C, R> : FetchProducerDoc<T[P], C, T>;
+  [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?: T[P] extends unknown[] ? FetchFnc<T[P], C, R> : FetchProducer<T[P], C, T>;
   // [P in keyof T as T[P] extends object ? P : never]?: FetchProducerDoc<T[P], C, T>;
 }
 
@@ -269,13 +269,13 @@ const execute = async (
 };
 
 // producer
-const fetchProducer = async <T, C>(target: FetchProducerDoc<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T>) => {
+const fetchProducer = async <T, C>(target: FetchProducer<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T>) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
   keyArray.push(Fetch);
   return await execute(target, keyArray, [config]);
 }
 
-export const producer = <T, C>(target: FetchProducerDoc<T, C>) => {
+export const producer = <T, C>(target: FetchProducer<T, C>) => {
   const data = Object.assign(target, {
     // @ts-ignore
     // [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>(config?: ProducerFetchConfig<C, P, FlatObjectKeyExcludeArrayDepp<T>[P]>): Promise<FlatObjectKeyExcludeArrayDepp<T>[P]> => {
@@ -291,7 +291,7 @@ export const producer = <T, C>(target: FetchProducerDoc<T, C>) => {
   return data;
 }
 
-const requestProducer = async <T extends object, C>(data: FetchProducerDoc<T, C>, request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
+const requestProducer = async <T extends object, C>(data: FetchProducer<T, C>, request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
   const change = async (bowl: any, field: any, request: any, paths: string[] = []) => {
     for (const [key, value] of Array.from(Object.entries(request))) {
       if (key === RequestFetch) {

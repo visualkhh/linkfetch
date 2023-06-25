@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchProducer, FlatObjectKeyExcludeArrayDeppAndDeleteType, linkstore, FlatObjectKey, FetchDoc, RequestType, FetchProducerReturnType } from 'linkfetch';
+import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchStore, FlatObjectKeyExcludeArrayDeppAndDeleteType, linkstore, FlatObjectKey, FetchDoc, RequestType, FetchProducerReturnType } from 'linkfetch';
 import { Friend, User } from './types/User';
 
 const corsOptions = {
@@ -10,7 +10,7 @@ const corsOptions = {
 }
 
 type Reg = { id: string, queryId?: string };
-const doc: FetchProducer<User, Reg> = {
+const doc: FetchStore<User, Reg> = {
   // 'friends': {
   //   $fetch: async () => {
   //     return '' as any;

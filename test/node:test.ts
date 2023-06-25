@@ -151,14 +151,28 @@ type Req = {
 
   const friends = await root.friends({
     request: {
-      wowfriend: 'aa',
-      wowfriends: 'aaaa'
+
+      wowfriends: '',
+      wowfriend: ''
+
     },
     config: {}
   });
+  friends.forEach(async (it, index) => {
+    console.log(it);
+    const address = await it.address({
+      request: {
+        id: '' + index
+      }
+    });
+    console.log('address--->', address);
+  })
   console.log('friends--->', friends);
 
 
+  root.$$fetch({
+    path: 'friends'
+  })
   // const address = await root.address({
   //   config: {
   //

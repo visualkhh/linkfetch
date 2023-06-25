@@ -261,13 +261,21 @@ export type FetchObject<T extends { [RequestType]?: T[RequestTypeType] }, C = an
   [P in keyof Omit<T, RequestTypeType>]:
   T[P] extends object ?
     T[P] extends (infer AI)[]
-      ?
-        AI extends object
-          ? (request?: FetchObjectRequestParameter<RequestTypeType extends keyof AI ? AI[RequestTypeType] : C, AI>) => Promise<FetchObject<DeleteRequestType<AI>, RequestTypeType extends keyof AI ? AI[RequestTypeType] : C>>
-          : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<DeleteRequestType<T[P]>>
-      : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<FetchObject<DeleteRequestType<T[P]>, RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C>>
+      ? (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<DeleteRequestType<T[P]>>
+      : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<FetchObject<T[P], C>>
     // : (request?: FetchObjectRequestParameter<RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C, T[P]>) => Promise<FetchObject<DeleteRequestType<T[P]>, RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C>>
     // : (request?: FetchObjectRequestParameter<RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C, T[P]>) => Promise<FetchObject<Omit<T[P], RequestTypeFetchType>, RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C>>
+    : T[P];
+}
+export type FetchReturnObject<T extends { [RequestType]?: T[RequestTypeType] }, C = any> = {
+  [P in keyof Omit<T, RequestTypeType>]:
+  T[P] extends object ?
+    T[P] extends (infer AI)[]
+      ?
+        AI extends object
+          ? (request?: FetchObjectRequestParameter<RequestTypeType extends keyof AI ? AI[RequestTypeType] : C, AI>) => Promise<FetchReturnObject<AI, C>[]>
+          : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<DeleteRequestType<T[P]>>
+      : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<FetchReturnObject<T[P], C>>
     : T[P];
 }
 
@@ -411,7 +419,7 @@ const linkfetchLoop = <T extends object, C = any>(
   config?: { linkfetchConfig?: FetchConfig },
   paths: string[] = []):
 // @ts-ignore
-  (request?: { request?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType], config?: FlatKeyOptionAndObjectConfigType<DeleteRequestType<T>> }) => Promise<FetchObject<T, C>> => {
+  (request?: { request?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType], config?: FlatKeyOptionAndObjectConfigType<DeleteRequestType<T>> }) => Promise<FetchReturnObject<T, C>> => {
 
   // console.log('--dataSet-->', dataSet.data);
   const change = (field: any, defaultReqeust?: any, paths: string[] = []) => {
@@ -467,7 +475,14 @@ const linkfetchLoop = <T extends object, C = any>(
         return runFetch(doc, fetchConfig).then(it => {
           console.log('FetchObject fetch--->');
           console.dir(it, {depth: 10});
-          if (!Array.isArray(it)) {
+          if (Array.isArray(it)) {
+            it.forEach((item, index) => {
+              linkfetchLoop({data: item, defaultRequest: defaultReqeust}, fetch, config, [...paths])
+            })
+            // for (let i = 0; i < it.length; i++) {
+            //   linkfetchLoop({data: it, defaultRequest: defaultReqeust}, fetch, config, [...paths])
+            // }
+          } else {
             linkfetchLoop({data: it, defaultRequest: defaultReqeust}, fetch, config, [...paths])
           }
           p.$$linkfetch_cache = it;

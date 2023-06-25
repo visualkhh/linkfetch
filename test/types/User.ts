@@ -14,6 +14,7 @@ export type Friend = {
   address: {
     first: string;
     last: string;
+    lastAddr2?: string;
     [RequestType]?: {
       id: string;
     }
@@ -37,7 +38,11 @@ export type User = {
       subDetails: {
         first: string;
         last?: string;
-      }
+      },
+      // [RequestType]: {
+      //   wowaddressDetails: string;
+      //   wowaddressDetailsss?: string;
+      // }
     };
     zip: string;
     secondZip?: string;
@@ -51,12 +56,6 @@ export type User = {
     colleagues: Friend[]
   }
   friends: Friend[]
-    & {
-    [RequestType]: {
-      wowfriends: string;
-      gg?: string;
-    }
-  }
   //   & {
   //   [key in RequestTypeFetchType]: {
   //     wowfriends: string;

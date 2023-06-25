@@ -51,6 +51,7 @@ export type User = {
       wowaddressggg?: string;
     }
   },
+  ages: number[];
   office: {
     name?: string;
     colleagues: Friend[]

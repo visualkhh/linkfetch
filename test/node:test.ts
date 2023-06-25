@@ -171,7 +171,15 @@ type Req = {
 
 
   root.$$fetch({
-    path: 'friends'
+    path: '',
+    config: {
+      'address': {
+
+      }
+    },
+    request: {
+
+    }
   })
   // const address = await root.address({
   //   config: {

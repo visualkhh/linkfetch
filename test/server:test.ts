@@ -1,6 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchStore, FlatObjectKeyExcludeArrayDeppAndDeleteType, linkstore, FlatObjectKey, FetchDoc, RequestType, FetchProducerReturnType } from 'linkfetch';
+import { FetchRequestParameter, FetchStore, linkstore, FlatObjectKey, FetchDoc, RequestType, FetchProducerReturnType, FlatRootObjectKeyExcludeArrayDeppAndDeleteType, FlatObjectOnlyKeyArrayItemAndDeleteType } from 'linkfetch';
 import { Friend, User } from './types/User';
 
 const corsOptions = {
@@ -18,6 +18,7 @@ const doc: FetchStore<User, Reg> = {
   // }
 
   $fetch: async (r,) => {
+
     console.log('-root---------', r);
     return {
       name: 'linkfetch',
@@ -39,7 +40,8 @@ const doc: FetchStore<User, Reg> = {
         $ref: `http://localhost:3000/users/${r.request?.wow}/office`,
         // $ref: `http://localhost:3000/users/${r.request?.id}/office`,
       }
-    };
+
+    } as any;
   },
   friends: {
     $fetch: async (r) => {
@@ -47,7 +49,7 @@ const doc: FetchStore<User, Reg> = {
       const friend: FetchProducerReturnType<Friend>[] = [];
       for (let i = 0; i < 2; i++) {
         const id = `friend-${i}`;
-        const item: FetchProducerReturnType<Friend> = {id: id, name: `friend-${id}`, age: 22+i, address: {$ref: `http://localhost:3000/users/0/friends/address?id=${id}`}};
+        const item: FetchProducerReturnType<Friend> = {id: id, name: `friend-${id}`, age: 22 + i, address: {$ref: `http://localhost:3000/users/0/friends/address?id=${id}`}};
         friend.push(item);
       }
       return friend;
@@ -61,7 +63,7 @@ const doc: FetchStore<User, Reg> = {
       //     $ref: `http://localhost:3000/users/0/friends/address?id=444`
       //     first: '6484',
       //     last: 'a'
-        // }
+      // }
       // }
       // @ts-ignore
       // return [friend] as (Friend[] & {
@@ -82,27 +84,31 @@ const doc: FetchStore<User, Reg> = {
       }
     }
   },
-  // office: {
-
-  //   $fetch: async (r) => {
-  //     console.log('-office---------', r);
-  //     const user: User = {id: '112u2'} as User;
-  //     const user2: User = {id: '112u2'} as User;
-  //     return {colleagues: [user, user2]};
-  //     // return {
-  //     //   colleagues: {
-  //     //     $ref: `http://localhost:3000/users/1/office/colleagues`,
-  //     //   }
-  //     // };
-  //   },
-  //   colleagues: {
-  //     $fetch: async (r) => {
-  //       const user: User = {id: '2u2'} as User;
-  //       const user2: User = {id: '2u2'} as User;
-  //       return [user, user2];
-  //     }
-  //   }
-  // },
+  ages: {
+    $fetch: async (r) => {
+      return [1, 2, 3];
+    }
+  },
+  office: {
+    $fetch: async (r) => {
+      console.log('-office---------', r);
+      const user: User = {id: '112u2'} as User;
+      const user2: User = {id: '112u2'} as User;
+      return {colleagues: [user, user2]} as any;
+      // return {
+      //   colleagues: {
+      //     $ref: `http://localhost:3000/users/1/office/colleagues`,
+      //   }
+      // };
+    },
+    colleagues: {
+      $fetch: async (r) => {
+        const user: User = {id: '2u2'} as User;
+        const user2: User = {id: '2u2'} as User;
+        return [user, user2] as any;
+      }
+    }
+  },
 
   address: {
     // $fetch: async (r: FetchRequestParameter<Reg | {test: string}, User>) => {
@@ -184,9 +190,9 @@ app.post('/users/:id', async (req, res) => {
 
 // users/0/users/0/friends/address?id=friend-1
 app.get('/users/:id/*', async (req, res) => {
-  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;
+  const paths = req.path.split('/').splice(3).join('.') as keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<User>;
   const data = await root.$$fetch({
-    path: paths as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>,
+    path: paths as keyof FlatObjectOnlyKeyArrayItemAndDeleteType<User>,
     // request: {id: req.params.id, queryId: req.query.queryId as string},
     request: {id: req.query.id} as any,
     config: req.body
@@ -197,12 +203,12 @@ app.get('/users/:id/*', async (req, res) => {
 });
 
 app.post('/users/:id/*', async (req, res) => {
-  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;
+  const paths = req.path.split('/').splice(3).join('.') as keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<User>;
   const requestData = {...req.params, ...req.query};
   console.log('request /users/:id/*  path', req.path, paths, requestData);
   console.dir(req.body, {depth: 10});
   const data = await root.$$fetch({
-    path: paths as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>,
+    path: paths as keyof FlatObjectOnlyKeyArrayItemAndDeleteType<User>,
     // request: {id: req.params.id, queryId: req.query.queryId as string},
     request: requestData,
     config: req.body
@@ -211,6 +217,9 @@ app.post('/users/:id/*', async (req, res) => {
   res.json(data);
 });
 
+root.$$fetch({path: 'friends.address', request: {id: '2'}}).then(it => {
+  console.log('---', it)
+})
 app.listen(3000, () => {
   console.log('Server started at port 3000');
 });

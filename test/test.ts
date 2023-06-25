@@ -1,5 +1,15 @@
-import { FlatObjectKey, RequestTypeFetch } from 'linkfetch';
+import { FlatObjectKey, FlatKeyArrayItemAndDeleteType, RequestType } from 'linkfetch';
 
+export type Friend = {
+  name: string;
+  id: string;
+  age: number,
+  address: {
+    first: string;
+    last: string;
+    lastAddr2?: string;
+  }
+}
 const user = {
   name: 'linkfetch',
   id: '1',
@@ -8,7 +18,8 @@ const user = {
     detail: {
       first: 'first',
     }
-  }
+  },
+  friends: [{id:'', age: 2 , address: {first:'2', last:'2', lastAddr2:'2'}, name:'2'}] as Friend[]
 }
 type User = typeof user;
 
@@ -41,7 +52,8 @@ export type GetPath<T, P extends string> =
     ?
     K extends keyof T ? GetPath<T[K], R> : never
     :
-    P extends keyof T ? T[P] : (P extends string ? T : never);
+    P extends keyof (T extends (infer AI)[] ? AI : T) ? (T extends (infer AI)[] ? AI : T)[P] :(P extends string ? T : never);
+// P extends keyof (T extends (infer AI)[] ? AI : T) ? (T extends (infer AI)[] ? AI : T)[P] : (P extends string ? T : never);
 export type FlatKeyExcludeArrayDeep<T> = {
   [P in keyof T as // @ts-ignore
     T[P] extends any[] ? `${P}` : T[P] extends object
@@ -52,6 +64,10 @@ export type FlatKeyExcludeArrayDeep<T> = {
       // @ts-ignore
       `${P}`]: unknown;
 }
+type AAA = GetPath<User, 'friends.address'>
+// const a: AAA = {
+//
+// }
 export type FlatObjectKeyExcludeArrayDepp<T> = {
   // @ts-ignore
   [P in keyof FlatKeyExcludeArrayDeep<T> as GetPath<T, P> extends object ? P : never]: GetPath<T, P>;
@@ -208,9 +224,19 @@ type NameOrAge = ValueOf<WOW>;
 //
 // type AAA = AA<{name: string, age: number, aa: {}, aaa: string[]}>;
 
-
 type A<T> = {
   [P in keyof T as T[P] extends object ? P : never]: T[P]
 }
 
 type B = A<{name: string, age: number, aa: {}, aaa: string[]}>;
+
+type C = FlatKeyArrayItemAndDeleteType<B>;
+// const c: C =
+
+type a = {
+  users: {name: 'ss'}[]
+  off: {
+    name: 's'
+  }
+}
+

@@ -39,6 +39,14 @@ export type GetPath<T, P extends string> =
     :
     P extends keyof T ? T[P] : (P extends string ? T : never);
 
+export type GetPathArrayItem<T, P extends string> =
+  P extends `${infer K}.${infer R}`
+    ?
+    K extends keyof T ? GetPathArrayItem<T[K], R> : never
+    :
+    P extends keyof (T extends (infer AI)[] ? AI : T) ? (T extends (infer AI)[] ? AI : T)[P] :(P extends string ? T : never);
+    // P extends keyof T ? T[P] : (P extends string ? T : never);
+
 export type FlatKey<T> = {
   [P in keyof T as T[P] extends object
     ?
@@ -51,7 +59,7 @@ export type FlatKey<T> = {
 
 export type FlatKeyExcludeArrayDeep<T> = {
   [P in keyof T as // @ts-ignore
-    T[P] extends any[] ? `${P}` : T[P] extends object
+    T[P] extends unknown[] ? `${P}` : T[P] extends object
       ?
       // @ts-ignore
       `${P}.${keyof FlatKeyExcludeArrayDeep<T[P]>}` | `${P}`
@@ -61,7 +69,7 @@ export type FlatKeyExcludeArrayDeep<T> = {
 }
 export type FlatKeyExcludeArrayDeepAndDeleteType<T> = {
   [P in keyof Omit<T, RequestTypeType> as // @ts-ignore
-    T[P] extends any[] ? `${P}` : T[P] extends object
+    T[P] extends unknown[] ? `${P}` : T[P] extends object
       ?
       // @ts-ignore
       `${P}.${keyof FlatKeyExcludeArrayDeepAndDeleteType<T[P]>}` | `${P}`
@@ -70,23 +78,58 @@ export type FlatKeyExcludeArrayDeepAndDeleteType<T> = {
       `${P}`]: unknown;
 }
 
+export type FlatObjectKeyExcludeArrayDeepAndDeleteType<T> = {
+  [P in keyof Omit<T, RequestTypeType> as // @ts-ignore
+    T[P] extends unknown[] ? `${P}` : T[P] extends object
+      ?
+      // @ts-ignore
+      `${P}.${keyof FlatObjectKeyExcludeArrayDeepAndDeleteType<T[P]>}` | `${P}`
+      :
+      // @ts-ignore
+      never]: unknown;
+}
+
+export type FlatObjectOnlyKeyArrayItemAndDeleteType<T> = {
+  [P in keyof Omit<T, RequestTypeType> as // @ts-ignore
+    T[P] extends (infer AI)[]
+      ?
+      // @ts-ignore
+      `${P}${AI extends object ? `.${keyof FlatObjectOnlyKeyArrayItemAndDeleteType<AI>}` : ''}`
+      :
+      T[P] extends object
+        ? // @ts-ignore
+        `${P}.${keyof FlatObjectOnlyKeyArrayItemAndDeleteType<T[P]>}` | `${P}`
+        : // @ts-ignore
+         never
+  ]: unknown;
+} & FlatObjectKeyExcludeArrayDeepAndDeleteType<T>;
+
 export type FlatObjectKey<T> = {
   // @ts-ignore
   [P in keyof FlatKey<T> as GetPath<T, P> extends object ? P : never]: GetPath<T, P>;
 }
-export type FlatObjectKeyExcludeArrayDepp<T> = {
+export type FlatRootObjectKeyExcludeArrayDepp<T> = {
   // @ts-ignore
   [P in keyof FlatKeyExcludeArrayDeep<T> as GetPath<T, P> extends object ? P : never]: GetPath<T, P>;
 } & { '': T };
-export type FlatObjectKeyExcludeArrayDeppAndDeleteType<T> = {
+export type FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T> = {
   // @ts-ignore
   [P in keyof FlatKeyExcludeArrayDeepAndDeleteType<T> as GetPath<T, P> extends object ? P : never]: GetPath<T, P>;
 } & { '': T };
-export type FlatObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C> = {
+export type FlatRootObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C> = {
   // @ts-ignore
   [P in keyof FlatKeyExcludeArrayDeepAndDeleteType<T> as GetPath<T, P> extends object ? P : never]?: undefined extends GetPath<T, P>[RequestTypeType] ? C : GetPath<T, P>[RequestTypeType];
   // @ts-ignore
 } & { ''?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType] };
+// export type FlatRootObjectOnlyOptionKeyRequestTypeFetchArrayItemAndDeleteType<T, C> = {
+//   // @ts-ignore
+//   [P in keyof FlatObjectOnlyKeyArrayItemAndDeleteType<T> as GetPath<T, P> extends object ? P : never]?: undefined extends GetPath<T, P>[RequestTypeType] ? C : GetPath<T, P>[RequestTypeType];
+//   // @ts-ignore
+// } & { ''?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType] };
+export type FlatRootObjectOnlyKeyArrayItemAndDeleteType<T> = {
+  // @ts-ignore
+  [P in keyof FlatObjectOnlyKeyArrayItemAndDeleteType<T> as GetPathArrayItem<T, P> extends object ? P : never]: GetPathArrayItem<T, P>;
+} & { '': T };
 /**
  ** @deprecated
  */
@@ -172,44 +215,57 @@ export type ExtractRequestTypeFetchType<T> = {
   [K in keyof T]: T[K] extends { [RequestType]: infer W } ? W : never;
 }
 // export type FetchConfigConsumer<C = any, T = undefined> = { request?: C, path?: (T extends undefined ? number : keyof FlatObjectKey<T>), value?: any, config?: FetchRequest<any, C>, linkfetchConfig?: FetchConfig };
-export type FetchConfigConsumer<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = {
+export type FetchConfigConsumer<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>> = {
   path: (P);
   // @ts-ignore
   request?: C,
   // request?: RequestTypeFetchType extends keyof FlatObjectKeyExcludeArrayDepp<T>[keyof P] ? string : number,
   // @ts-ignore
-  value?: FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P],
+  value?: FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>[P],
   config?: FetchRequest<any, C>,
   linkfetchConfig?: FetchConfig
 };
-export type Fetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = (
+export type Fetcher<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>> = (
   doc: FetchDoc | undefined,
   config: FetchConfigConsumer<C, T, P>
 ) => Promise<any>;
 
 
-export type GlobalFetchConfigConsumer<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T> ? {
+export type GlobalFetchConfigConsumer<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>> = P extends keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T> ? {
   path: (P);
   // @ts-ignore
-  request?: RequestTypeType extends keyof FlatObjectKeyExcludeArrayDepp<T>[P] ? FlatObjectKeyExcludeArrayDepp<T>[P][RequestTypeType] : C,
-  value?: Omit<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P], RequestTypeType>,
+  request?: RequestTypeType extends keyof FlatRootObjectKeyExcludeArrayDepp<T>[P] ? FlatRootObjectKeyExcludeArrayDepp<T>[P][RequestTypeType] : C,
+  value?: Omit<FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>[P], RequestTypeType>,
   config?: FetchRequest<any, C>,
   linkfetchConfig?: FetchConfig
 } : never;
-export type GlobalFetcher<C = any, T = undefined, P = keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>> = (
+export type GlobalFetcher<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>> = (
   doc: FetchDoc | undefined,
   config: GlobalFetchConfigConsumer<C, T, P>
 ) => Promise<any>;
 
 
-type ProducerFetchConfig<C, P extends keyof FlatObjectKeyExcludeArrayDepp<T>, T> = {
+type StoreFetchMetaConfig<C, P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>, T> = {
   path: P,
-  request?: (RequestTypeType extends keyof FlatObjectKeyExcludeArrayDepp<T> ? FlatObjectKeyExcludeArrayDepp<T>[RequestTypeType] : C),
+  request?: T extends (infer AI)[]
+    ?
+    (RequestTypeType extends keyof AI ? AI[RequestTypeType] : C)
+    : (RequestTypeType extends keyof T ? T[RequestTypeType] : C)
   config?: FlatKeyOptionAndObjectConfigType<T>
 };
 
+type FetchMetaConfig<C, P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>, T> = {
+  path: P,
+  request?: T extends (infer AI)[]
+    ?
+    (RequestTypeType extends keyof AI ? AI[RequestTypeType] : C)
+    : (RequestTypeType extends keyof T ? T[RequestTypeType] : C)
+  config?: FlatKeyOptionAndObjectConfigType<T>
+  flushUpdate?: boolean
+};
+
 export type FetchRequestParameter<C, T = undefined> = {
-  path?: (T extends undefined ? string : keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>),
+  path?: (T extends undefined ? string : keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>),
   request?: C,
   config?: FlatKeyOptionAndObjectConfigType<Omit<T, RequestTypeType>>,
   flushUpdate?: boolean
@@ -309,7 +365,7 @@ const execute = async (
 };
 
 // producer
-const fetchStore = async <T, C>(target: FetchStore<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T>) => {
+const fetchStore = async <T, C>(target: FetchStore<T, C>, keys: string[] | string = [], config?: StoreFetchMetaConfig<C, any, T>) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
   keyArray.push(Fetch);
   return await execute(target, keyArray, [config]);
@@ -317,9 +373,7 @@ const fetchStore = async <T, C>(target: FetchStore<T, C>, keys: string[] | strin
 
 export const linkstore = <T, C>(target: FetchStore<T, C>) => {
   const data = Object.assign(target, {
-    // @ts-ignore
-    // [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>(config?: ProducerFetchConfig<C, P, FlatObjectKeyExcludeArrayDepp<T>[P]>): Promise<FlatObjectKeyExcludeArrayDepp<T>[P]> => {
-    [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>(config: ProducerFetchConfig<C, P, FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P]>): Promise<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P]> => {
+      [MetaFetch]: async <P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>>(config: StoreFetchMetaConfig<C, P, FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>[P]>): Promise<FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>[P]> => {
       return await fetchStore(target, config.path as any, config as any);
     },
     // @ts-ignore
@@ -377,13 +431,15 @@ export const linkfetch = async <T extends object, C = any>(
   }, fetch, request)({request: request?.request ?? dataSet.defaultRequest?.$request, config: request?.config});
 
   const executor = {
-    [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>(
-      config: {
-        path: P,
-        request?: FlatObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C>,
-        config?: ObjectOptionValueAndObjectConfigType<FlatObjectKeyExcludeArrayDeppAndDeleteType<DeleteRequestType<T>>>,
-        flushUpdate?: boolean
-      }
+    [MetaFetch]: async <P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>>(
+      // @ts-ignore
+      config: FetchMetaConfig<C, P, FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>[P]>
+      // config: {
+      //   path: P,
+      //   request?: FlatRootObjectOnlyOptionKeyRequestTypeFetchArrayItemAndDeleteType<T, C>,
+      //   config?: ObjectOptionValueAndObjectConfigType<FlatRootObjectOnlyKeyArrayItemAndDeleteType<DeleteRequestType<T>>>,
+      //   flushUpdate?: boolean
+      // }
     ) => {
       return await execute(targetResult, config.path as any, [],
         async (target, prev, value, name, paths) => {
@@ -399,12 +455,12 @@ export const linkfetch = async <T extends object, C = any>(
           }
           return await value(newRequest);
         }
-      ) as FetchObject<DeleteRequestType<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P]>>;
+      ) as FetchObject<DeleteRequestType<FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>[P]>>;
       //  FetchObject<User, Req>
     },
     [MetaSnapshot]: async (config?: {
-      request?: FlatObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C>,
-      config?: ObjectOptionValueAndObjectConfigType<FlatObjectKeyExcludeArrayDeppAndDeleteType<DeleteRequestType<T>>>,
+      request?: FlatRootObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C>,
+      config?: ObjectOptionValueAndObjectConfigType<FlatRootObjectKeyExcludeArrayDeppAndDeleteType<DeleteRequestType<T>>>,
       allFetch?: boolean
     }): Promise<OptionalDeep<T>> => {
       return linkfetchSnapshot<T, C>(targetResult, config);
@@ -499,10 +555,10 @@ const linkfetchLoop = <T extends object, C = any>(
 }
 
 // @ts-ignore
-const linkfetchSnapshot = async <T extends object, C>(data: FetchObject<T, C>, config?: {
+const linkfetchSnapshot = async <T extends object, C>(data: FetchReturnObject<T, C>, config?: {
   allFetch?: boolean,
-  request?: FlatObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C>,
-  config?: ObjectOptionValueAndObjectConfigType<FlatObjectKeyExcludeArrayDeppAndDeleteType<DeleteRequestType<T>>>,
+  request?: FlatRootObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType<T, C>,
+  config?: ObjectOptionValueAndObjectConfigType<FlatRootObjectKeyExcludeArrayDeppAndDeleteType<DeleteRequestType<T>>>,
 }): Promise<OptionalDeep<T>> => {
   const change = async (bowl: any, field: any, path: string[] = []) => {
     // console.log('path------->', path)

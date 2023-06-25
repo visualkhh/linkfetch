@@ -1,10 +1,5 @@
 import {
-  ExtractRequestTypeFetchType,
   RequestType,
-  RequestTypeType,
-  DeleteRequestType,
-  FlatObjectKeyExcludeArrayDeppAndDeleteType,
-  FlatObjectKeyExcludeArrayDepp
 } from 'linkfetch';
 
 export type Friend = {
@@ -39,10 +34,10 @@ export type User = {
         first: string;
         last?: string;
       },
-      // [RequestType]: {
-      //   wowaddressDetails: string;
-      //   wowaddressDetailsss?: string;
-      // }
+      [RequestType]: {
+        wowaddressDetails: string;
+        wowaddressDetailsss?: string;
+      }
     };
     zip: string;
     secondZip?: string;

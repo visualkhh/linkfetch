@@ -123,7 +123,7 @@ export type FlatRootObjectOptionKeyRequestTypeFetchExcludeArrayDeppAndDeleteType
 } & { ''?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType] };
 // export type FlatRootObjectOnlyOptionKeyRequestTypeFetchArrayItemAndDeleteType<T, C> = {
 //   // @ts-ignore
-//   [P in keyof FlatObjectOnlyKeyArrayItemAndDeleteType<T> as GetPath<T, P> extends object ? P : never]?: undefined extends GetPath<T, P>[RequestTypeType] ? C : GetPath<T, P>[RequestTypeType];
+//   [P in keyof FlatObjectOnlyKeyArrayItemAndDeleteType<T> as GetPathArrayItem<T, P> extends object ? P : never]?: GetPathArrayItem<T, P>;// undefined extends GetPathArrayItem<T, P>[RequestTypeType] ? C : GetPathArrayItem<T, P>[RequestTypeType];
 //   // @ts-ignore
 // } & { ''?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType] };
 export type FlatRootObjectOnlyKeyArrayItemAndDeleteType<T> = {
@@ -256,11 +256,24 @@ type StoreFetchMetaConfig<C, P extends keyof FlatRootObjectOnlyKeyArrayItemAndDe
 
 type FetchMetaConfig<C, P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>, T> = {
   path: P,
-  request?: T extends (infer AI)[]
-    ?
-    (RequestTypeType extends keyof AI ? AI[RequestTypeType] : C)
-    : (RequestTypeType extends keyof T ? T[RequestTypeType] : C)
-  config?: FlatKeyOptionAndObjectConfigType<T>
+  // request?: T extends (infer AI)[]
+  //   ?
+  //   {wow:1}
+  //   :  FlatRootObjectOnlyOptionKeyRequestTypeFetchArrayItemAndDeleteType<T, C>,
+  request?: {
+    // @ts-ignore
+    [P in keyof FlatObjectOnlyKeyArrayItemAndDeleteType<T> as GetPathArrayItem<T, P> extends object ? P : never]?:
+    // @ts-ignore
+    GetPathArrayItem<T, P> extends (infer AI)[]
+      ?
+      (RequestTypeType extends keyof AI ? AI[RequestTypeType] : C)
+      :// @ts-ignore
+      (RequestTypeType extends keyof GetPathArrayItem<T, P> ? GetPathArrayItem<T, P>[RequestTypeType] : C)
+    ;// undefined extends GetPathArrayItem<T, P>[RequestTypeType] ? C : GetPathArrayItem<T, P>[RequestTypeType];
+    // @ts-ignore
+  } & { ''?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType] },
+  // config?: FlatKeyOptionAndObjectConfigType<T>
+  config?: ObjectOptionValueAndObjectConfigType<FlatRootObjectOnlyKeyArrayItemAndDeleteType<DeleteRequestType<T>>>,
   flushUpdate?: boolean
 };
 
@@ -357,7 +370,6 @@ const execute = async (
     }
     t = fieldLoopCallBack ? (await fieldLoopCallBack(target, t, t[key], key, [...pPaths])) : t[key];
   }
-  console.log('-----!!!!', t, parameter);
   if (typeof t === 'function') {
     return t.apply(target, parameter);
   }
@@ -373,6 +385,7 @@ const fetchStore = async <T, C>(target: FetchStore<T, C>, keys: string[] | strin
 
 export const linkstore = <T, C>(target: FetchStore<T, C>) => {
   const data = Object.assign(target, {
+    // @ts-ignore
       [MetaFetch]: async <P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>>(config: StoreFetchMetaConfig<C, P, FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>[P]>): Promise<FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>[P]> => {
       return await fetchStore(target, config.path as any, config as any);
     },
@@ -434,12 +447,6 @@ export const linkfetch = async <T extends object, C = any>(
     [MetaFetch]: async <P extends keyof FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>>(
       // @ts-ignore
       config: FetchMetaConfig<C, P, FlatRootObjectOnlyKeyArrayItemAndDeleteType<T>[P]>
-      // config: {
-      //   path: P,
-      //   request?: FlatRootObjectOnlyOptionKeyRequestTypeFetchArrayItemAndDeleteType<T, C>,
-      //   config?: ObjectOptionValueAndObjectConfigType<FlatRootObjectOnlyKeyArrayItemAndDeleteType<DeleteRequestType<T>>>,
-      //   flushUpdate?: boolean
-      // }
     ) => {
       return await execute(targetResult, config.path as any, [],
         async (target, prev, value, name, paths) => {
@@ -587,7 +594,7 @@ const linkfetchSnapshot = async <T extends object, C>(data: FetchReturnObject<T,
 
         // console.log('------>', value.$$linkfetch_cache)
         if (Array.isArray(value.$$linkfetch_cache)) {
-          bowl[key] = value.$$linkfetch_cache;
+          bowl[key] = value.$$linkfetch_cache; // TODO: 변경필요?
         } else {
           bowl[key] = await change({}, value.$$linkfetch_cache, npath);
         }

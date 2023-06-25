@@ -180,30 +180,37 @@ type NameOrAge = ValueOf<WOW>;
 //
 //
 //
-type WOW = {name?: string, age: number, address?: string};
-type ExtractOptionalUndefined<T> = {
-  [K in keyof T as undefined extends T[K] ? K : never]: T[K];
-  // [K in keyof T as T[K] extends undefined ? K : never]: T[K];
+// type WOW = {name?: string, age: number, address?: string};
+// type ExtractOptionalUndefined<T> = {
+//   [K in keyof T as undefined extends T[K] ? K : never]: T[K];
+//   // [K in keyof T as T[K] extends undefined ? K : never]: T[K];
+// }
+// type w = ExtractOptionalUndefined<WOW>;
+// const ww: w = {
+//
+// }
+//
+//
+//
+// type UU = {
+//   name: string;
+// }
+//
+// // @ts-ignore
+// type UU2<T, C, W> = undefined extends UU[C]  ? W : UU[C];
+//
+// const u: UU2<UU, 'name', number> = ''
+//
+// export type AA<T> = {
+//   [K in keyof T as T[K] extends object ? K : never]: T[K]
+// }
+//
+//
+// type AAA = AA<{name: string, age: number, aa: {}, aaa: string[]}>;
+
+
+type A<T> = {
+  [P in keyof T as T[P] extends object ? P : never]: T[P]
 }
-type w = ExtractOptionalUndefined<WOW>;
-const ww: w = {
 
-}
-
-
-
-type UU = {
-  name: string;
-}
-
-// @ts-ignore
-type UU2<T, C, W> = undefined extends UU[C]  ? W : UU[C];
-
-const u: UU2<UU, 'name', number> = ''
-
-export type AA<T> = {
-  [K in keyof T as T[K] extends object ? K : never]: T[K]
-}
-
-
-type AAA = AA<{name: string, age: number, aa: {}, aaa: string[]}>;
+type B = A<{name: string, age: number, aa: {}, aaa: string[]}>;

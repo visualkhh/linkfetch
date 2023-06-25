@@ -7,6 +7,22 @@ import {
   FlatObjectKeyExcludeArrayDepp
 } from 'linkfetch';
 
+export type Friend = {
+  name: string;
+  id: string;
+  age: number,
+  address: {
+    first: string;
+    last: string;
+    [RequestType]?: {
+      id: string;
+    }
+  }
+  [RequestType]?: {
+    wowfriend: string;
+    wowfriends?: string;
+  }
+}
 export type User = {
   name: string;
   id: string;
@@ -32,9 +48,9 @@ export type User = {
   },
   office: {
     name?: string;
-    colleagues: User[]
+    colleagues: Friend[]
   }
-  friends: User[]
+  friends: Friend[]
     & {
     [RequestType]: {
       wowfriends: string;

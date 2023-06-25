@@ -1,7 +1,7 @@
 import express, { Express } from 'express';
 import cors from 'cors';
-import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchProducer, FlatObjectKeyExcludeArrayDeppAndDeleteType, producer, FlatObjectKey, FetchDoc, FetchProducerDocReturnType, RequestType } from 'linkfetch';
-import { User } from './types/User';
+import { FlatObjectKeyExcludeArrayDepp, FetchRequestParameter, FetchProducer, FlatObjectKeyExcludeArrayDeppAndDeleteType, linkstore, FlatObjectKey, FetchDoc, RequestType, FetchProducerReturnType } from 'linkfetch';
+import { Friend, User } from './types/User';
 
 const corsOptions = {
   origin: '*',
@@ -44,36 +44,65 @@ const doc: FetchProducer<User, Reg> = {
   friends: {
     $fetch: async (r) => {
       console.log('-friends------aa---', r);
-      // @ts-ignore
-      const user: User = {id: '22'};
-      return [user] as (User[] & {
-        [RequestType]: {
-          wowfriends: string;
-          gg?: string;
-        }
-      });
-    },
-  },
-  office: {
-    $fetch: async (r) => {
-      console.log('-office---------', r);
-      const user: User = {id: '112u2'} as User;
-      const user2: User = {id: '112u2'} as User;
-      return {colleagues: [user, user2]};
+      const friend: FetchProducerReturnType<Friend>[] = [];
+      for (let i = 0; i < 2; i++) {
+        const id = `friend-${i}`;
+        const item: FetchProducerReturnType<Friend> = {id: id, name: `friend-${id}`, age: 22+i, address: {$ref: `http://localhost:3000/users/0/friends/address?id=${id}`}};
+        friend.push(item);
+      }
+      return friend;
+      // return [{name: '', id: '', age:0 , address: {}}];
+
       // return {
-      //   colleagues: {
-      //     $ref: `http://localhost:3000/users/1/office/colleagues`,
+      //   name: '2',
+      //   id: 'asd',
+      //   age: 4,
+      //   address: {
+      //     $ref: `http://localhost:3000/users/0/friends/address?id=444`
+      //     first: '6484',
+      //     last: 'a'
+        // }
+      // }
+      // @ts-ignore
+      // return [friend] as (Friend[] & {
+      //   [RequestType]: {
+      //
+      //     wowfriends: string;
+      //     gg?: string;
       //   }
-      // };
+      // });
     },
-    colleagues: {
+
+    address: {
       $fetch: async (r) => {
-        const user: User = {id: '2u2'} as User;
-        const user2: User = {id: '2u2'} as User;
-        return [user, user2];
+        return {
+          first: 'id=6484: ' + r.request?.id,
+          last: 'a'
+        }
       }
     }
   },
+  // office: {
+
+  //   $fetch: async (r) => {
+  //     console.log('-office---------', r);
+  //     const user: User = {id: '112u2'} as User;
+  //     const user2: User = {id: '112u2'} as User;
+  //     return {colleagues: [user, user2]};
+  //     // return {
+  //     //   colleagues: {
+  //     //     $ref: `http://localhost:3000/users/1/office/colleagues`,
+  //     //   }
+  //     // };
+  //   },
+  //   colleagues: {
+  //     $fetch: async (r) => {
+  //       const user: User = {id: '2u2'} as User;
+  //       const user2: User = {id: '2u2'} as User;
+  //       return [user, user2];
+  //     }
+  //   }
+  // },
 
   address: {
     // $fetch: async (r: FetchRequestParameter<Reg | {test: string}, User>) => {
@@ -112,7 +141,7 @@ const doc: FetchProducer<User, Reg> = {
   }
 }
 
-const root = producer<User, Reg>(doc);
+const root = linkstore<User, Reg>(doc);
 // type a = FlatObjectKey<User>;
 // (async () => {
 //   const a = await root.$$fetch({key:'address.detail'});
@@ -152,6 +181,20 @@ app.post('/users/:id', async (req, res) => {
   res.json(data);
 })
 ;
+
+// users/0/users/0/friends/address?id=friend-1
+app.get('/users/:id/*', async (req, res) => {
+  const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;
+  const data = await root.$$fetch({
+    path: paths as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>,
+    // request: {id: req.params.id, queryId: req.query.queryId as string},
+    request: {id: req.query.id} as any,
+    config: req.body
+  });
+  // root.$$fetch({path: 'friends.'})
+  console.log('response-->', data)
+  res.json(data);
+});
 
 app.post('/users/:id/*', async (req, res) => {
   const paths = req.path.split('/').splice(3).join('.') as keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<User>;

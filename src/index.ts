@@ -156,8 +156,10 @@ export type RequestFetchBody<T, C, R = T> = {
 export type FetchRequest<T, C, R = T> = RequestFetchBody<T, RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>
   & {
   [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?:
-  T[P] extends any[] ?
-    RequestFetchBody<T, RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, R>
+  T[P] extends (infer AI)[] ?
+      AI extends object ?
+        FetchRequest<AI, C>
+        : RequestFetchBody<T, RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, R>
     : FetchRequest<T[P], C>;
 }
 
@@ -209,7 +211,7 @@ type ProducerFetchConfig<C, P extends keyof FlatObjectKeyExcludeArrayDepp<T>, T>
 export type FetchRequestParameter<C, T = undefined> = {
   path?: (T extends undefined ? string : keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>),
   request?: C,
-  config?: FlatKeyOptionAndObjectConfigType<T>,
+  config?: FlatKeyOptionAndObjectConfigType<Omit<T, RequestTypeType>>,
   flushUpdate?: boolean
 };
 
@@ -220,19 +222,49 @@ export type FetchProducerReturnType<T> = {
 };
 
 export type FetchFnc<T, C, R = T> = {
-  [P in typeof Fetch]: (request: FetchRequestParameter<RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>) => T extends (infer TA)[] ? Promise<TA[]> : Promise<FetchProducerReturnType<T>>;
+  // [P in typeof Fetch]: (request: FetchRequestParameter<RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>) => T extends (infer TA)[] ? Promise<TA[]> : Promise<FetchProducerReturnType<T>>;
+  [P in typeof Fetch]: (request: FetchRequestParameter<RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>) =>
+    T extends (infer AI)[]
+      ?
+      AI extends object
+        ? Promise<FetchProducerReturnType<AI>[]>
+        : Promise<AI[]>
+      :
+      Promise<FetchProducerReturnType<T>>;
 };
-export type FetchProducer<T, C, R = T> = FetchFnc<T, C, R>
+
+
+export type FetchArrayProducer<T, C, R = T> = FetchFnc<T[], C, R>
   & {
-  [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?: T[P] extends unknown[] ? FetchFnc<T[P], C, R> : FetchProducer<T[P], C, T>;
-  // [P in keyof T as T[P] extends object ? P : never]?: FetchProducerDoc<T[P], C, T>;
+  [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?:
+  T[P] extends unknown[]
+    ?
+    FetchFnc<T[P], C, R>
+    :
+    FetchStore<T[P], C, T>;
+}
+
+export type FetchStore<T, C, R = T> = FetchFnc<T, C, R>
+  & {
+  [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?:
+  T[P] extends (infer AI)[]
+    ?
+      AI extends object
+        // ? FetchFnc<T[P], C, R>
+        ? FetchArrayProducer<AI, C, R>
+        : FetchFnc<T[P], C, R>
+    :
+      FetchStore<T[P], C, T>;
 }
 
 export type FetchObject<T extends { [RequestType]?: T[RequestTypeType] }, C = any> = {
   [P in keyof Omit<T, RequestTypeType>]:
   T[P] extends object ?
-    T[P] extends any[]
-      ? (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<DeleteRequestType<T[P]>>
+    T[P] extends (infer AI)[]
+      ?
+        AI extends object
+          ? (request?: FetchObjectRequestParameter<RequestTypeType extends keyof AI ? AI[RequestTypeType] : C, AI>) => Promise<FetchObject<DeleteRequestType<AI>, RequestTypeType extends keyof AI ? AI[RequestTypeType] : C>>
+          : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<DeleteRequestType<T[P]>>
       : (request?: FetchObjectRequestParameter<RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C, T[P]>) => Promise<FetchObject<DeleteRequestType<T[P]>, RequestTypeType extends keyof T[P] ? T[P][RequestTypeType] : C>>
     // : (request?: FetchObjectRequestParameter<RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C, T[P]>) => Promise<FetchObject<DeleteRequestType<T[P]>, RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C>>
     // : (request?: FetchObjectRequestParameter<RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C, T[P]>) => Promise<FetchObject<Omit<T[P], RequestTypeFetchType>, RequestTypeFetchType extends keyof T[P] ? T[P][RequestTypeFetchType] : C>>
@@ -269,29 +301,29 @@ const execute = async (
 };
 
 // producer
-const fetchProducer = async <T, C>(target: FetchProducer<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T>) => {
+const fetchStore = async <T, C>(target: FetchStore<T, C>, keys: string[] | string = [], config?: ProducerFetchConfig<C, any, T>) => {
   const keyArray = Array.isArray(keys) ? keys : keys.split('.');
   keyArray.push(Fetch);
   return await execute(target, keyArray, [config]);
 }
 
-export const producer = <T, C>(target: FetchProducer<T, C>) => {
+export const linkstore = <T, C>(target: FetchStore<T, C>) => {
   const data = Object.assign(target, {
     // @ts-ignore
     // [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>(config?: ProducerFetchConfig<C, P, FlatObjectKeyExcludeArrayDepp<T>[P]>): Promise<FlatObjectKeyExcludeArrayDepp<T>[P]> => {
     [MetaFetch]: async <P extends keyof FlatObjectKeyExcludeArrayDeppAndDeleteType<T>>(config: ProducerFetchConfig<C, P, FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P]>): Promise<FlatObjectKeyExcludeArrayDeppAndDeleteType<T>[P]> => {
-      return await fetchProducer(target, config.path as any, config as any);
+      return await fetchStore(target, config.path as any, config as any);
     },
     // @ts-ignore
     [MetaRequest]: async (request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
       // @ts-ignore
-      return requestProducer(target, request);
+      return requestStore(target, request);
     }
   });
   return data;
 }
 
-const requestProducer = async <T extends object, C>(data: FetchProducer<T, C>, request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
+const requestStore = async <T extends object, C>(data: FetchStore<T, C>, request: FetchRequest<T, C>): Promise<OptionalDeep<T>> => {
   const change = async (bowl: any, field: any, request: any, paths: string[] = []) => {
     for (const [key, value] of Array.from(Object.entries(request))) {
       if (key === RequestFetch) {

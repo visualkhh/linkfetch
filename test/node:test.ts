@@ -6,113 +6,133 @@ type Req = {
   queryId: string;
 }
 (async () => {
-const doc: FetchObjectOrDocType<User> = {
-  $ref: 'http://localhost:3000/users/1',
-  address: {
-    $ref: 'http://localhost:3000/users/1/address'
-  }
-};
+  const doc: FetchObjectOrDocType<User> = {
+    $ref: 'http://localhost:3000/users/1',
+    address: {
+      $ref: 'http://localhost:3000/users/1/address'
+    }
+  };
 // const a: FlatKeyExcludeArrayDeep<User> = {
 // }
-const defaultRequest: FetchRequest<User, Req> = {
-  // $request: {id: '1', queryId: 'q1'},
-  $request: {wow: '33'},
-  $config: {optionId: {is: true}},
-  $flushUpdate: true,
-  friends: {
-    // $request: {wow:''},
-    get $request() {
-      return {wowfriends: ''};
+  const defaultRequest: FetchRequest<User, Req> = {
+    // $request: {id: '1', queryId: 'q1'},
+    $request: {wow: '33'},
+    $config: {optionId: {is: true}},
+    $flushUpdate: true,
+    friends: {
+      // $request: {wow:''},
+      // $request: {wowfriends: 'aa'},
+      $request: {
+        wowfriends: 'aa',
+        wowfriend: 'aa',
+      },
+      $config: {id: {format: 'friends defaultConfig'}},
+      // $fetch: async (r, p) => {
+      //   // p?.path
+      //   p?.request?.wowfriends
+      //   return '' as any;
+      // }
+
+
     },
-    $config: {id: {format:'friends defaultConfig'}},
-    // $fetch: async (r, p) => {
-    //   // p?.path
-    //   p?.request?.wowfriends
-    //   return '' as any;
-    // }
-  },
-  office: {
-    $request: {id: '2', queryId: 'q2'},
-    // colleagues: {
-    //   $request: {id: '', queryId:''}
-    // }
-  },
-  address: {
-    // $request: {id: '3', queryId: 'q3'},
-    $request: {wowaddress: 'aa'},
-    $config: {'details.last': {is: true}},
-    // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
-    //   if (config?.request && 'test' in config.request) {
-    //     config.request.test
-    //   }
-    $fetch: async (r, c) => {
-      // @ts-ignore
-      // c.root.then(it => {
-      //   console.log('address defaultconfig root-------!!', it)
-      // })
-      console.log('address defaultconfig root--------',  root);
-      // const a = await c.root
-      // c.request.id;
-      return fetcher(r, c as any);
-    },
-    details: {
-      $request: {id: '3', queryId: 'q3'},
-      $config: {first: {format:'details defaultConfig'}}
-    }
-  }
-}
-const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
-  // console.log('doc------>', doc);
-  console.log('config------>', doc);
-  // config.path;
-  // config.value;
-  // config.request
-  // const a = config.path;
-  if (config.path === 'address') {
-    // config.request;
-    // config.value.
-    // config.path;
-    // config.request?.wowaddress;
-    //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
-    //   const aa: a = {
-    //
-    //   }
-    //   config.request?.wowaddress;
-  }
-  // if (config.path === 'office') {
-  //   config.request
-  // }
-  // if (config?.request && ('wowaddress' in config?.request)) {
-  // config.request.
-  // }
-  ;
-  console.dir(config, {depth: 10});
-  if (doc) {
-    console.log('------->', doc.$ref)
-    const url = new URL(doc.$ref);
-    if (config.request) {
-      Object.entries(config.request).forEach(([key, value]) => {
-        url.searchParams.set(key, value);
-      });
-    }
-    // url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
-    // @ts-ignore
-    const body = doc?.$config ? JSON.stringify(doc.$config) : undefined;
-    // console.log('body-->', body)
-    const responsePromise = fetch(
-      url,
-      {
-        method: 'POST',
-        body: body,
-        headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'}
+    office: {
+      $request: {id: '2', queryId: 'q2'},
+      $fetch: async (r, p) => {
+        return {}
+      },
+      colleagues: {
+        $request: {
+          wowfriends: 'aa',
+          wowfriend: 'aa',
+        },
+        address: {
+          $request: {
+            id: '1',
+          }
+          // $fetch: async (r, p) => {
+          //   return '' as any;
+          // }
+        }
       }
-    );
-    const dataPromise = responsePromise.then(it => it.json());
-    return dataPromise;
-  } else {
-    return Promise.resolve(config?.value);
+    },
+    address: {
+      // $request: {id: '3', queryId: 'q3'},
+      $request: {wowaddress: 'aa'},
+      $config: {'details.last': {is: true}},
+      // $fetch: async (r, config?:  FetchConfigConsumer<Req | {test: string}, User>) => {
+      //   if (config?.request && 'test' in config.request) {
+      //     config.request.test
+      //   }
+      $fetch: async (r, c) => {
+        // @ts-ignore
+        // c.root.then(it => {
+        //   console.log('address defaultconfig root-------!!', it)
+        // })
+        console.log('address defaultconfig root--------', root);
+        // const a = await c.root
+        // c.request.id;
+        return fetcher(r, c as any);
+      },
+
+      details: {
+        $request: {id: '3', queryId: 'q3'},
+        $config: {first: {format: 'details defaultConfig'}}
+
+      }
+    }
   }
-}
+  const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
+    // console.log('doc------>', doc);
+    console.log('config------>', doc);
+    // config.path;
+    // config.value;
+    // config.request
+    // const a = config.path;
+    if (config.path === 'address') {
+      // config.request;
+      // config.value.
+      // config.path;
+      // config.request?.wowaddress;
+      //   type a = FlatObjectKeyExcludeArrayDepp<User>[typeof config.path]
+      //   const aa: a = {
+      //
+      //   }
+      //   config.request?.wowaddress;
+    }
+    // if (config.path === 'office') {
+    //   config.request
+    // }
+    // if (config?.request && ('wowaddress' in config?.request)) {
+    // config.request.
+    // }
+    ;
+    console.dir(config, {depth: 10});
+    if (doc) {
+      console.log('------->', doc.$ref)
+      const url = new URL(doc.$ref);
+      if (config.request) {
+        Object.entries(config.request).forEach(([key, value]) => {
+          url.searchParams.set(key, value);
+        });
+      }
+      // url.searchParams.set('queryId', config?.request?.queryId ?? 'none');
+      // @ts-ignore
+      const body = doc?.$config ? JSON.stringify(doc.$config) : undefined;
+      // console.log('body-->', body)
+      const responsePromise = fetch(
+        url,
+        {
+          method: 'POST',
+          body: body,
+          headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'}
+        }
+      );
+      const dataPromise = responsePromise.then(it => it.json());
+      return dataPromise;
+    } else {
+      return Promise.resolve(config?.value);
+    }
+  }
 
 
   const dataSet = {
@@ -122,17 +142,29 @@ const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
   const root = await linkfetch<User, Req>(dataSet, fetcher,
     {
       request: {wow: '1'},
-      config: {
-
-      },
+      config: {},
       linkfetchConfig: {cached: true}
     }
   );
   console.log('\n\n\n');
   console.dir(root, {depth: 10});
 
-  const address = await root.address();
-  console.log('---end-->', root);
+  const friends = await root.friends({
+    request: {
+      wowfriend: 'aa',
+      wowfriends: 'aaaa'
+    },
+    config: {}
+  });
+  console.log('friends--->', friends);
+
+
+  // const address = await root.address({
+  //   config: {
+  //
+  //   }
+  // });
+  // console.log('---end-->', root);
   // const details = await address.details()
   // const subDetails = await details.subDetails().catch(() => {
   //   return {first:'zzzzz', last: 'zzzzz'}

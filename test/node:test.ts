@@ -37,9 +37,6 @@ type Req = {
     },
     office: {
       $request: {id: '2', queryId: 'q2'},
-      $fetch: async (r, p) => {
-        return {}
-      },
       colleagues: {
         $request: {
           wowfriends: 'aa',
@@ -149,44 +146,57 @@ type Req = {
   console.log('\n\n\n');
   console.dir(root, {depth: 10});
 
-  const friends = await root.friends({
-    request: {
+  // const address = await root.address();
+  // console.log('address--->');
+  // console.dir(address, {depth: 10});
 
-      wowfriends: '',
-      wowfriend: ''
+  // const office = await root.office();
+  // console.log('office--->');
+  // console.dir(office, {depth: 10});
 
-    },
-    config: {}
-  });
-  friends.forEach(async (it, index) => {
-    console.log(it);
-    const address = await it.address({
-      request: {
-        id: '' + index
-      }
-    });
-    console.log('address--->', address);
-  })
-  console.log('friends--->', friends);
+  const snapshot  = await root.$$snapshot({allFetch: true});
+  console.log('------------------snapshot------------------');
+  console.dir(snapshot, {depth: 10});
 
 
-  root.$$fetch({
-    path: '',
-    config: {
-
-      friends: {},
-      'friends.address': {
-
-      }
-    },
-    request: {
-      // 'address.details': {
-      // }
-      'friends.address': {
-        id: 'asd'
-      },
-    }
-  })
+  // const friends = await root.friends({
+  //   request: {
+  //
+  //     wowfriends: '',
+  //     wowfriend: ''
+  //
+  //   },
+  //   config: {}
+  // });
+  // friends.forEach(async (it, index) => {
+  //   console.log(it);
+  //   const address = await it.address({
+  //     request: {
+  //       id: '' + index
+  //     }
+  //   });
+  //   console.log('address--->', address);
+  // })
+  // console.log('friends--->', friends);
+  //
+  //
+  // root.$$fetch({
+  //   path: '',
+  //   config: {
+  //
+  //     friends: {},
+  //     'friends.address': {
+  //
+  //     }
+  //   },
+  //   request: {
+  //     // 'address.details': {
+  //     // }
+  //     'friends.address': {
+  //       id: 'asd'
+  //     },
+  //   }
+  // });
   // const address = await root.address({
   //   config: {
   //

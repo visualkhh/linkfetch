@@ -536,8 +536,8 @@ const linkfetchLoop = <T extends object, C = any>(
         // }
         const runFetch = (defaultReqeust?.[Fetch] ?? fetch) as Fetcher<C, T>;
         return runFetch(doc, fetchConfig).then(it => {
-          console.log('FetchObject fetch--->');
-          console.dir(it, {depth: 10});
+          // console.log('FetchObject fetch--->');
+          // console.dir(it, {depth: 10});
           if (Array.isArray(it)) {
             it.forEach((item, index) => {
               linkfetchLoop({data: item, defaultRequest: defaultReqeust}, fetch, config, [...paths])

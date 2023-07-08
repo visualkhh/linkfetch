@@ -43,6 +43,7 @@ const doc: FetchStore<User, Reg> = {
 
     } as any;
   },
+
   friends: {
     $fetch: async (r) => {
       console.log('-friends------aa---', r);
@@ -135,14 +136,14 @@ const doc: FetchStore<User, Reg> = {
           }
         }
       },
-      // subDetails: {
-      //   $fetch: async (r) => {
-      //     return {
-      //       first: 'subDetails first',
-      //       last: 'subDetails last',
-      //     }
-      //   }
-      // }
+      subDetails: {
+        $fetch: async (r) => {
+          return {
+            first: 'subDetails first',
+            last: 'subDetails last',
+          }
+        }
+      }
     }
   }
 }

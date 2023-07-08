@@ -218,3 +218,4 @@ $RECYCLE.BIN/
 /package-lock.json
 /dist/
 /test/package-lock.json
+/temp/

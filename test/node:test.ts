@@ -49,7 +49,19 @@ type Req = {
           // $fetch: async (r, p) => {
           //   return '' as any;
           // }
+        },
+        $catch: async (e, r, p) => {
+          console.log('----colleagues-----err', e);
+          return {};
         }
+      },
+      // $fetch: async (r, p) => {
+      //   console.log('---office- fetch');
+      //   return {vv:'1'};
+      // },
+      $catch: async (e, r, p) => {
+        console.log('---office------err', e, r, p);
+        return {wwwwwwwwwww:'1111111111111'};
       }
     },
     address: {
@@ -72,7 +84,7 @@ type Req = {
       },
 
       details: {
-        $request: {id: '3', queryId: 'q3'},
+        $request: {wowaddressDetails: '33', wowaddressDetailsss: 'dd'},
         $config: {first: {format: 'details defaultConfig'}}
 
       }
@@ -80,7 +92,7 @@ type Req = {
   }
   const fetcher: GlobalFetcher<Req, User> = async (doc, config) => {
     // console.log('doc------>', doc);
-    console.log('config------>', doc);
+    console.log('global fetcher config------>', doc);
     // config.path;
     // config.value;
     // config.request
@@ -124,6 +136,7 @@ type Req = {
           headers: {Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json'}
         }
       );
+      console.log('------?????')
       const dataPromise = responsePromise.then(it => it.json());
       return dataPromise;
     } else {
@@ -150,13 +163,19 @@ type Req = {
   // console.log('address--->');
   // console.dir(address, {depth: 10});
 
-  // const office = await root.office();
-  // console.log('office--->');
-  // console.dir(office, {depth: 10});
-
-  const snapshot  = await root.$$snapshot({allFetch: true});
-  console.log('------------------snapshot------------------');
-  console.dir(snapshot, {depth: 10});
+  try {
+    // console.log('!!!!!!', root.office());
+    console.log('11')
+    const office = await root.office({catch: async () => {return {name: '111', colleagues: []}}});
+    console.log('22', office)
+    // console.log('office--->', office);
+    // console.dir(office, {depth: 10});
+  } catch (e) {
+    console.log('errrrrrr', e);
+  }
+  // const snapshot  = await root.$$snapshot({allFetch: true});
+  // console.log('------------------snapshot------------------');
+  // console.dir(snapshot, {depth: 10});
 
 
   // const friends = await root.friends({

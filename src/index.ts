@@ -5,6 +5,8 @@ export type MetaPrefixType = typeof MetaPrefixField;
 
 export const Fetch = `${PrefixField}fetch` as const;
 export type FetchType = typeof Fetch;
+export const Catch = `${PrefixField}catch` as const;
+export type CatchType = typeof Catch;
 export const FlushUpdate = `${PrefixField}flushUpdate` as const;
 export type FlushUpdateType = typeof FlushUpdate;
 
@@ -191,11 +193,11 @@ export type RequestFetchBody<T, C, R = T> = {
   & {
   [P in typeof Fetch]?: Fetcher<C, R>;
 } & {
+  [P in typeof Catch]?: Catch<C, R>;
+} & {
   [P in typeof FlushUpdate]?: boolean;
 };
 
-// export type FetchRequest<T extends {[k in typeof RequestTypeFetch]? : T[k]}, C, R = T> = RequestFetchBody<T, T[RequestTypeFetchType] extends undefined ? C : T[RequestTypeFetchType], R>
-// @ts-ignore
 export type FetchRequest<T, C, R = T> = RequestFetchBody<T, RequestTypeType extends keyof T ? T[RequestTypeType] : C, R>
   & {
   [P in keyof Omit<T, RequestTypeType> as T[P] extends object ? P : never]?:
@@ -230,6 +232,11 @@ export type Fetcher<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeAr
   config: FetchConfigConsumer<C, T, P>
 ) => Promise<any>;
 
+export type Catch<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>> = (
+  error: any,
+  doc: FetchDoc | undefined,
+  config: FetchConfigConsumer<C, T, P>
+) => Promise<any>;
 
 export type GlobalFetchConfigConsumer<C = any, T = undefined, P = keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>> = P extends keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T> ? {
   path: (P);
@@ -281,6 +288,7 @@ export type FetchRequestParameter<C, T = undefined> = {
   path?: (T extends undefined ? string : keyof FlatRootObjectKeyExcludeArrayDeppAndDeleteType<T>),
   request?: C,
   config?: FlatKeyOptionAndObjectConfigType<Omit<T, RequestTypeType>>,
+  catch?: (error: any) => any;
   flushUpdate?: boolean
 };
 
@@ -482,7 +490,7 @@ const linkfetchLoop = <T extends object, C = any>(
   config?: { linkfetchConfig?: FetchConfig },
   paths: string[] = []):
 // @ts-ignore
-  (request?: { request?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType], config?: FlatKeyOptionAndObjectConfigType<DeleteRequestType<T>> }) => Promise<FetchReturnObject<T, C>> => {
+  (request?: { request?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType], config?: FlatKeyOptionAndObjectConfigType<DeleteRequestType<T>>, catch?:(e: any) => Promise<any> }) => Promise<FetchReturnObject<T, C>> => {
 
   // console.log('--dataSet-->', dataSet.data);
   const change = (field: any, defaultReqeust?: any, paths: string[] = []) => {
@@ -506,7 +514,7 @@ const linkfetchLoop = <T extends object, C = any>(
     }
     const p = Object.assign(
       // @ts-ignore
-      (r?: { request?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType], config?: FlatKeyOptionAndObjectConfigType<T>, flushUpdate?: boolean }) => {
+      (r?: { request?: undefined extends T[RequestTypeType] ? C : T[RequestTypeType], config?: FlatKeyOptionAndObjectConfigType<T>, flushUpdate?: boolean, catch?: (e: any) => Promise<any> }) => {
         const flushUpdate = r?.flushUpdate ?? defaultReqeust?.[FlushUpdate];
         if (flushUpdate) {
           p.$$linkfetch_cache = undefined;
@@ -531,27 +539,24 @@ const linkfetchLoop = <T extends object, C = any>(
           config: newConfig as any,
           linkfetchConfig: config?.linkfetchConfig
         };
-        // if (paths.length > 0) {
-        //   (fetchConfig.path as any) = paths.join('.');
-        // }
         const runFetch = (defaultReqeust?.[Fetch] ?? fetch) as Fetcher<C, T>;
         return runFetch(doc, fetchConfig).then(it => {
-          // console.log('FetchObject fetch--->');
-          // console.dir(it, {depth: 10});
           if (Array.isArray(it)) {
             it.forEach((item, index) => {
               linkfetchLoop({data: item, defaultRequest: defaultReqeust}, fetch, config, [...paths])
             })
-            // for (let i = 0; i < it.length; i++) {
-            //   linkfetchLoop({data: it, defaultRequest: defaultReqeust}, fetch, config, [...paths])
-            // }
           } else {
             linkfetchLoop({data: it, defaultRequest: defaultReqeust}, fetch, config, [...paths])
           }
           p.$$linkfetch_cache = it;
           p.$$linkfetch_age++;
-          // p.$$config = it?.$config;
           return it;
+        }).catch((e) => {
+          if (r?.catch) {
+            return r.catch(e);
+          } else if (defaultReqeust?.[Catch]) {
+            return defaultReqeust?.[Catch](e, doc, fetchConfig);
+          }
         });
       },
       {$$linkfetch_cache: undefined, $$linkfetch_age: 0});

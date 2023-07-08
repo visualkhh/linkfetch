@@ -90,26 +90,26 @@ const doc: FetchStore<User, Reg> = {
       return [1, 2, 3];
     }
   },
-  office: {
-    $fetch: async (r) => {
-      console.log('-office---------', r);
-      const user: User = {id: '112u2'} as User;
-      const user2: User = {id: '112u2'} as User;
-      return {colleagues: [user, user2]} as any;
-      // return {
-      //   colleagues: {
-      //     $ref: `http://localhost:3000/users/1/office/colleagues`,
-      //   }
-      // };
-    },
-    colleagues: {
-      $fetch: async (r) => {
-        const user: User = {id: '2u2'} as User;
-        const user2: User = {id: '2u2'} as User;
-        return [user, user2] as any;
-      }
-    }
-  },
+  // office: {
+  //   $fetch: async (r) => {
+  //     console.log('-office---------', r);
+  //     const user: User = {id: '112u2'} as User;
+  //     const user2: User = {id: '112u2'} as User;
+  //     return {colleagues: [user, user2]} as any;
+  //     // return {
+  //     //   colleagues: {
+  //     //     $ref: `http://localhost:3000/users/1/office/colleagues`,
+  //     //   }
+  //     // };
+  //   },
+  //   colleagues: {
+  //     $fetch: async (r) => {
+  //       const user: User = {id: '2u2'} as User;
+  //       const user2: User = {id: '2u2'} as User;
+  //       return [user, user2] as any;
+  //     }
+  //   }
+  // },
 
   address: {
     // $fetch: async (r: FetchRequestParameter<Reg | {test: string}, User>) => {
